@@ -1,0 +1,50 @@
+.wrapper {
+  min-height: 100vh;
+  background: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.card {
+  width: 100%;
+  max-width: 980px;
+  background: #fff;
+  border-radius: 28px;
+  padding: 48px 28px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+}
+
+.logoWrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 40px;
+}
+
+.logo {
+  height: 80px;
+  width: auto;
+}
+
+.title {
+  margin: 0;
+  color: #dc2626;
+  font-weight: 800;
+  line-height: 1.1;
+  font-size: clamp(28px, 4vw, 52px);
+}
+
+.text {
+  margin-top: 22px;
+  color: #111827;
+  font-size: clamp(15px, 1.4vw, 18px);
+  line-height: 1.75;
+}
+
+.footer {
+  margin-top: 44px;
+  color: #9ca3af;
+  font-size: clamp(13px, 1.1vw, 16px);
+}
