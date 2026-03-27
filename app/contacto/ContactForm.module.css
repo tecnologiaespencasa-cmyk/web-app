@@ -133,8 +133,80 @@
   color: #be123c;
 }
 
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(12, 18, 32, 0.58);
+  display: grid;
+  place-items: center;
+  padding: 1.2rem;
+}
+
+.modalCard {
+  width: min(470px, 100%);
+  border-radius: 20px;
+  background: #fff;
+  border: 1px solid rgba(20, 130, 79, 0.22);
+  box-shadow: 0 24px 60px rgba(9, 24, 48, 0.32);
+  padding: 1.5rem 1.3rem;
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 1rem;
+}
+
+.modalCheckCircle {
+  width: 64px;
+  height: 64px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(145deg, #1cb678 0%, #0c9f67 100%);
+  box-shadow: 0 12px 26px rgba(12, 159, 103, 0.32);
+}
+
+.modalCheck {
+  font-size: 2rem;
+  line-height: 1;
+  color: #fff;
+  font-weight: 800;
+}
+
+.modalText {
+  margin: 0;
+  color: #1f2430;
+  font-size: 1rem;
+  line-height: 1.5;
+  font-weight: 600;
+}
+
+.modalButton {
+  border: none;
+  border-radius: 12px;
+  background: #0f9f69;
+  color: #fff;
+  padding: 0.65rem 1.2rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: transform 140ms ease, filter 140ms ease;
+}
+
+.modalButton:hover,
+.modalButton:focus-visible {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+  outline: none;
+}
+
 @media (max-width: 900px) {
   .formCard {
     border-radius: 22px;
+  }
+
+  .modalCard {
+    border-radius: 18px;
+    padding: 1.35rem 1.05rem;
   }
 }

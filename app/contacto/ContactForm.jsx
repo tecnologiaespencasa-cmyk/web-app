@@ -19,6 +19,7 @@ const SITE_KEY = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "";
 export default function ContactForm() {
   const [formData, setFormData] = useState(EMPTY_FORM);
   const [status, setStatus] = useState({ type: "idle", message: "" });
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [showValidation, setShowValidation] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRecaptchaScriptReady, setIsRecaptchaScriptReady] = useState(false);
@@ -193,10 +194,8 @@ export default function ContactForm() {
         return;
       }
 
-      setStatus({
-        type: "success",
-        message: payload.message || "Mensaje enviado. Pronto te contactaremos.",
-      });
+      setStatus({ type: "idle", message: "" });
+      setIsSuccessModalOpen(true);
       setFormData(EMPTY_FORM);
       setShowValidation(false);
       resetRecaptcha();
@@ -320,11 +319,37 @@ export default function ContactForm() {
         </button>
 
         {status.message ? (
-          <p className={status.type === "success" ? styles.successText : styles.errorText} role="status">
+          <p className={styles.errorText} role="status">
             {status.message}
           </p>
         ) : null}
       </form>
+
+      {isSuccessModalOpen ? (
+        <div className={styles.modalOverlay} role="presentation" onClick={() => setIsSuccessModalOpen(false)}>
+          <div
+            className={styles.modalCard}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="contact-success-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className={styles.modalCheckCircle} aria-hidden="true">
+              <span className={styles.modalCheck}>✓</span>
+            </div>
+            <p id="contact-success-title" className={styles.modalText}>
+              Solicitud enviada correctamente, uno de nuestros analistas te contactara pronto.
+            </p>
+            <button
+              type="button"
+              className={styles.modalButton}
+              onClick={() => setIsSuccessModalOpen(false)}
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }

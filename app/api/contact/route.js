@@ -1,9 +1,14 @@
 ﻿import { NextResponse } from "next/server";
+import nodemailer from "nodemailer";
+
+export const runtime = "nodejs";
 
 const NAME_REGEX = /^[A-Za-z]+(?:\s+[A-Za-z]+)*$/;
 const PHONE_REGEX = /^\d{7,10}$/;
 const EMAIL_REGEX = /^[A-Za-z0-9._-]+@[A-Za-z0-9._-]+$/;
 const ALLOWED_FIELDS = new Set(["fullName", "phone", "email", "website", "recaptchaToken"]);
+const CONTACT_RECIPIENT = "liderdetecnologia@especialistasencasa.com";
+const CONTACT_SUBJECT = "Solicitud vía pagina web.";
 
 const MAX_CONTENT_LENGTH_BYTES = 2 * 1024;
 const MAX_REQUESTS_PER_WINDOW = 8;
@@ -113,6 +118,71 @@ function hasUnexpectedFields(payload) {
   return Object.keys(payload).some((field) => !ALLOWED_FIELDS.has(field));
 }
 
+function parseBoolean(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  return normalized === "1" || normalized === "true" || normalized === "yes";
+}
+
+function getMailConfig() {
+  const host = String(process.env.CONTACT_SMTP_HOST || "smtp.office365.com").trim();
+  const port = Number(process.env.CONTACT_SMTP_PORT || 587);
+  const secure = parseBoolean(process.env.CONTACT_SMTP_SECURE);
+  const user = String(process.env.CONTACT_SMTP_USER || "").trim();
+  const password = String(process.env.CONTACT_SMTP_PASSWORD || "").trim();
+  const from = String(process.env.CONTACT_EMAIL_FROM || user).trim();
+
+  if (!host || !user || !password || !from || !Number.isInteger(port) || port < 1 || port > 65535) {
+    return null;
+  }
+
+  return {
+    host,
+    port,
+    secure,
+    user,
+    password,
+    from,
+  };
+}
+
+function buildMailText({ fullName, phone, email, clientIp }) {
+  const submittedAt = new Date().toISOString();
+  const ipLabel = clientIp && clientIp !== "unknown" ? clientIp : "No disponible";
+
+  return [
+    "Nueva solicitud vía página web",
+    "",
+    `Nombre completo: ${fullName}`,
+    `Teléfono: ${phone}`,
+    `Correo electrónico: ${email}`,
+    `IP: ${ipLabel}`,
+    `Fecha (ISO): ${submittedAt}`,
+  ].join("\n");
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function buildMailHtml({ fullName, phone, email, clientIp }) {
+  const submittedAt = new Date().toISOString();
+  const ipLabel = clientIp && clientIp !== "unknown" ? clientIp : "No disponible";
+
+  return `
+    <h2 style="margin:0 0 12px;">Nueva solicitud vía página web</h2>
+    <p style="margin:0 0 6px;"><strong>Nombre completo:</strong> ${escapeHtml(fullName)}</p>
+    <p style="margin:0 0 6px;"><strong>Teléfono:</strong> ${escapeHtml(phone)}</p>
+    <p style="margin:0 0 6px;"><strong>Correo electrónico:</strong> ${escapeHtml(email)}</p>
+    <p style="margin:0 0 6px;"><strong>IP:</strong> ${escapeHtml(ipLabel)}</p>
+    <p style="margin:0;"><strong>Fecha (ISO):</strong> ${escapeHtml(submittedAt)}</p>
+  `;
+}
+
 export async function POST(request) {
   const clientIp = getClientIp(request);
   const rateLimit = enforceRateLimit(clientIp);
@@ -216,9 +286,37 @@ export async function POST(request) {
     return jsonError("No se pudo validar reCAPTCHA.", 400);
   }
 
+  const mailConfig = getMailConfig();
+  if (!mailConfig) {
+    return jsonError("Configuración de correo incompleta.", 500);
+  }
+
+  const transporter = nodemailer.createTransport({
+    host: mailConfig.host,
+    port: mailConfig.port,
+    secure: mailConfig.secure,
+    auth: {
+      user: mailConfig.user,
+      pass: mailConfig.password,
+    },
+  });
+
+  try {
+    await transporter.sendMail({
+      from: mailConfig.from,
+      to: CONTACT_RECIPIENT,
+      subject: CONTACT_SUBJECT,
+      replyTo: email,
+      text: buildMailText({ fullName, phone, email, clientIp }),
+      html: buildMailHtml({ fullName, phone, email, clientIp }),
+    });
+  } catch (error) {
+    console.error("Error enviando correo de contacto:", error);
+    return jsonError("No fue posible enviar la solicitud en este momento. Intenta nuevamente.", 502);
+  }
+
   return jsonResponse({
     ok: true,
-    message: "Mensaje enviado. Pronto te contactaremos.",
+    message: "Solicitud enviada correctamente.",
   });
 }
-
