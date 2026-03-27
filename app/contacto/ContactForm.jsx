@@ -8,12 +8,14 @@ const EMPTY_FORM = {
   fullName: "",
   phone: "",
   email: "",
+  requestReason: "",
   website: "",
 };
 
 const NAME_REGEX = /^[A-Za-z]+(?:\s+[A-Za-z]+)*$/;
 const PHONE_REGEX = /^\d{7,10}$/;
 const EMAIL_REGEX = /^[A-Za-z0-9._-]+@[A-Za-z0-9._-]+$/;
+const REQUEST_REASON_REGEX = /^[A-Za-z0-9@._\-\s]+$/;
 const SITE_KEY = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "";
 
 export default function ContactForm() {
@@ -70,17 +72,22 @@ export default function ContactForm() {
   const isNameValid = useMemo(() => NAME_REGEX.test(formData.fullName.trim()), [formData.fullName]);
   const isPhoneValid = useMemo(() => PHONE_REGEX.test(formData.phone.trim()), [formData.phone]);
   const isEmailValid = useMemo(() => EMAIL_REGEX.test(formData.email.trim()), [formData.email]);
+  const isReasonValid = useMemo(() => {
+    const reason = formData.requestReason.trim();
+    return reason.length >= 10 && reason.length <= 600 && REQUEST_REASON_REGEX.test(reason);
+  }, [formData.requestReason]);
 
   const canSubmit = useMemo(
     () =>
       isNameValid &&
       isPhoneValid &&
       isEmailValid &&
+      isReasonValid &&
       !formData.website.trim() &&
       Boolean(recaptchaToken) &&
       Boolean(SITE_KEY) &&
       !isSubmitting,
-    [formData.website, isEmailValid, isNameValid, isPhoneValid, isSubmitting, recaptchaToken],
+    [formData.website, isEmailValid, isNameValid, isPhoneValid, isReasonValid, isSubmitting, recaptchaToken],
   );
 
   const updateField = (event) => {
@@ -109,6 +116,10 @@ export default function ContactForm() {
       }
 
       value = value.slice(0, 80);
+    }
+
+    if (name === "requestReason") {
+      value = value.replace(/[^A-Za-z0-9@._\-\s]/g, "").slice(0, 600);
     }
 
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -158,6 +169,14 @@ export default function ContactForm() {
       return;
     }
 
+    if (!isReasonValid) {
+      setStatus({
+        type: "error",
+        message: "El motivo debe tener de 10 a 600 caracteres y solo usar letras, números, espacios y @ . _ -",
+      });
+      return;
+    }
+
     if (!recaptchaToken) {
       setStatus({
         type: "error",
@@ -178,6 +197,7 @@ export default function ContactForm() {
           fullName: formData.fullName.trim(),
           phone: formData.phone.trim(),
           email: formData.email.trim(),
+          requestReason: formData.requestReason.trim(),
           website: formData.website.trim(),
           recaptchaToken,
         }),
@@ -298,6 +318,24 @@ export default function ContactForm() {
             value={formData.email}
             onChange={updateField}
             aria-invalid={showValidation && !isEmailValid}
+            required
+          />
+        </div>
+
+        <div className={styles.fieldGroup}>
+          <label htmlFor="requestReason" className={styles.label}>
+            Motivo de la solicitud
+          </label>
+          <textarea
+            id="requestReason"
+            name="requestReason"
+            className={styles.textarea}
+            placeholder="Describe brevemente tu solicitud"
+            value={formData.requestReason}
+            onChange={updateField}
+            minLength={10}
+            maxLength={600}
+            aria-invalid={showValidation && !isReasonValid}
             required
           />
         </div>

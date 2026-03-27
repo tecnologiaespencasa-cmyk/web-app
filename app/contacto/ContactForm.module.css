@@ -43,11 +43,35 @@
   transition: border-color 150ms ease, box-shadow 150ms ease;
 }
 
+.textarea {
+  width: 100%;
+  border: 1px solid rgba(232, 1, 21, 0.24);
+  border-radius: 13px;
+  background: #fff;
+  color: #202534;
+  padding: 0.73rem 0.86rem;
+  font-size: 1rem;
+  min-height: 120px;
+  resize: vertical;
+  font-family: inherit;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
 .input::placeholder {
   color: #7f8595;
 }
 
+.textarea::placeholder {
+  color: #7f8595;
+}
+
 .input:focus-visible {
+  outline: none;
+  border-color: var(--contact-red);
+  box-shadow: 0 0 0 3px rgba(232, 1, 21, 0.18);
+}
+
+.textarea:focus-visible {
   outline: none;
   border-color: var(--contact-red);
   box-shadow: 0 0 0 3px rgba(232, 1, 21, 0.18);
