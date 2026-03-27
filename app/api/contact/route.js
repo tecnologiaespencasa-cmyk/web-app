@@ -1,5 +1,5 @@
 ﻿import { NextResponse } from "next/server";
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 
 export const runtime = "nodejs";
 
@@ -10,6 +10,7 @@ const REQUEST_REASON_REGEX = /^[A-Za-z0-9@._\-\s]+$/;
 const ALLOWED_FIELDS = new Set(["fullName", "phone", "email", "requestReason", "website", "recaptchaToken"]);
 const CONTACT_RECIPIENT = "liderdetecnologia@especialistasencasa.com";
 const CONTACT_SUBJECT = "Solicitud vía pagina web.";
+const DEFAULT_CONTACT_FROM = "Especialistas en Casa <onboarding@resend.dev>";
 
 const MAX_CONTENT_LENGTH_BYTES = 10 * 1024;
 const MAX_REQUESTS_PER_WINDOW = 8;
@@ -119,31 +120,13 @@ function hasUnexpectedFields(payload) {
   return Object.keys(payload).some((field) => !ALLOWED_FIELDS.has(field));
 }
 
-function parseBoolean(value) {
-  const normalized = String(value || "").trim().toLowerCase();
-  return normalized === "1" || normalized === "true" || normalized === "yes";
-}
-
-function getMailConfig() {
-  const host = String(process.env.CONTACT_SMTP_HOST || "smtp.office365.com").trim();
-  const port = Number(process.env.CONTACT_SMTP_PORT || 587);
-  const secure = parseBoolean(process.env.CONTACT_SMTP_SECURE);
-  const user = String(process.env.CONTACT_SMTP_USER || "").trim();
-  const password = String(process.env.CONTACT_SMTP_PASSWORD || "").trim();
-  const from = String(process.env.CONTACT_EMAIL_FROM || user).trim();
-
-  if (!host || !user || !password || !from || !Number.isInteger(port) || port < 1 || port > 65535) {
+function getResendClient() {
+  const resendApiKey = String(process.env.RESEND_API_KEY || "").trim();
+  if (!resendApiKey) {
     return null;
   }
 
-  return {
-    host,
-    port,
-    secure,
-    user,
-    password,
-    from,
-  };
+  return new Resend(resendApiKey);
 }
 
 function buildMailText({ fullName, phone, email, requestReason, clientIp }) {
@@ -298,30 +281,30 @@ export async function POST(request) {
     return jsonError("No se pudo validar reCAPTCHA.", 400);
   }
 
-  const mailConfig = getMailConfig();
-  if (!mailConfig) {
+  const resend = getResendClient();
+  if (!resend) {
     return jsonError("Configuración de correo incompleta.", 500);
   }
 
-  const transporter = nodemailer.createTransport({
-    host: mailConfig.host,
-    port: mailConfig.port,
-    secure: mailConfig.secure,
-    auth: {
-      user: mailConfig.user,
-      pass: mailConfig.password,
-    },
-  });
+  const from = String(process.env.CONTACT_EMAIL_FROM || DEFAULT_CONTACT_FROM).trim();
+  if (!from) {
+    return jsonError("Configuración de correo incompleta.", 500);
+  }
 
   try {
-    await transporter.sendMail({
-      from: mailConfig.from,
-      to: CONTACT_RECIPIENT,
+    const result = await resend.emails.send({
+      from,
+      to: [CONTACT_RECIPIENT],
       subject: CONTACT_SUBJECT,
       replyTo: email,
       text: buildMailText({ fullName, phone, email, requestReason, clientIp }),
       html: buildMailHtml({ fullName, phone, email, requestReason, clientIp }),
     });
+
+    if (result?.error) {
+      console.error("Error enviando correo con Resend:", result.error);
+      return jsonError("No fue posible enviar la solicitud en este momento. Intenta nuevamente.", 502);
+    }
   } catch (error) {
     console.error("Error enviando correo de contacto:", error);
     return jsonError("No fue posible enviar la solicitud en este momento. Intenta nuevamente.", 502);
