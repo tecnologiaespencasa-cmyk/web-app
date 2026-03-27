@@ -1,5 +1,4 @@
 ﻿import { NextResponse } from "next/server";
-import { Resend } from "resend";
 
 export const runtime = "nodejs";
 
@@ -10,7 +9,6 @@ const REQUEST_REASON_REGEX = /^[A-Za-z0-9@._\-\s]+$/;
 const ALLOWED_FIELDS = new Set(["fullName", "phone", "email", "requestReason", "website", "recaptchaToken"]);
 const CONTACT_RECIPIENT = "liderdetecnologia@especialistasencasa.com";
 const CONTACT_SUBJECT = "Solicitud vía pagina web.";
-const DEFAULT_CONTACT_FROM = "Especialistas en Casa <onboarding@resend.dev>";
 
 const MAX_CONTENT_LENGTH_BYTES = 10 * 1024;
 const MAX_REQUESTS_PER_WINDOW = 8;
@@ -120,13 +118,22 @@ function hasUnexpectedFields(payload) {
   return Object.keys(payload).some((field) => !ALLOWED_FIELDS.has(field));
 }
 
-function getResendClient() {
-  const resendApiKey = String(process.env.RESEND_API_KEY || "").trim();
-  if (!resendApiKey) {
+function getGraphConfig() {
+  const tenantId = String(process.env.GRAPH_TENANT_ID || "").trim();
+  const clientId = String(process.env.GRAPH_CLIENT_ID || "").trim();
+  const clientSecret = String(process.env.GRAPH_CLIENT_SECRET || "").trim();
+  const senderEmail = String(process.env.GRAPH_SENDER_EMAIL || "").trim();
+
+  if (!tenantId || !clientId || !clientSecret || !senderEmail) {
     return null;
   }
 
-  return new Resend(resendApiKey);
+  return {
+    tenantId,
+    clientId,
+    clientSecret,
+    senderEmail,
+  };
 }
 
 function buildMailText({ fullName, phone, email, requestReason, clientIp }) {
@@ -167,6 +174,87 @@ function buildMailHtml({ fullName, phone, email, requestReason, clientIp }) {
     <p style="margin:0 0 6px;"><strong>IP:</strong> ${escapeHtml(ipLabel)}</p>
     <p style="margin:0;"><strong>Fecha (ISO):</strong> ${escapeHtml(submittedAt)}</p>
   `;
+}
+
+async function requestGraphAccessToken(graphConfig) {
+  const tokenUrl = `https://login.microsoftonline.com/${encodeURIComponent(graphConfig.tenantId)}/oauth2/v2.0/token`;
+  const tokenBody = new URLSearchParams({
+    client_id: graphConfig.clientId,
+    client_secret: graphConfig.clientSecret,
+    scope: "https://graph.microsoft.com/.default",
+    grant_type: "client_credentials",
+  });
+
+  let tokenResponse;
+  try {
+    tokenResponse = await fetch(tokenUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: tokenBody.toString(),
+      cache: "no-store",
+    });
+  } catch {
+    return { ok: false, message: "No fue posible conectarse con Microsoft Graph." };
+  }
+
+  const tokenPayload = await tokenResponse.json().catch(() => null);
+  if (!tokenResponse.ok || !tokenPayload?.access_token) {
+    return { ok: false, message: "No fue posible autenticarse con Microsoft Graph.", details: tokenPayload };
+  }
+
+  return { ok: true, accessToken: tokenPayload.access_token };
+}
+
+async function sendGraphMail({ accessToken, senderEmail, fullName, phone, email, requestReason, clientIp }) {
+  const sendMailUrl = `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(senderEmail)}/sendMail`;
+  const mailPayload = {
+    message: {
+      subject: CONTACT_SUBJECT,
+      body: {
+        contentType: "HTML",
+        content: buildMailHtml({ fullName, phone, email, requestReason, clientIp }),
+      },
+      toRecipients: [
+        {
+          emailAddress: {
+            address: CONTACT_RECIPIENT,
+          },
+        },
+      ],
+      replyTo: [
+        {
+          emailAddress: {
+            address: email,
+          },
+        },
+      ],
+    },
+    saveToSentItems: false,
+  };
+
+  let sendResponse;
+  try {
+    sendResponse = await fetch(sendMailUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify(mailPayload),
+      cache: "no-store",
+    });
+  } catch {
+    return { ok: false, message: "No fue posible enviar correo con Microsoft Graph." };
+  }
+
+  if (!sendResponse.ok) {
+    const sendPayload = await sendResponse.json().catch(() => null);
+    return { ok: false, message: "Microsoft Graph rechazó el envío de correo.", details: sendPayload };
+  }
+
+  return { ok: true };
 }
 
 export async function POST(request) {
@@ -281,32 +369,29 @@ export async function POST(request) {
     return jsonError("No se pudo validar reCAPTCHA.", 400);
   }
 
-  const resend = getResendClient();
-  if (!resend) {
+  const graphConfig = getGraphConfig();
+  if (!graphConfig) {
     return jsonError("Configuración de correo incompleta.", 500);
   }
 
-  const from = String(process.env.CONTACT_EMAIL_FROM || DEFAULT_CONTACT_FROM).trim();
-  if (!from) {
-    return jsonError("Configuración de correo incompleta.", 500);
+  const tokenResult = await requestGraphAccessToken(graphConfig);
+  if (!tokenResult.ok) {
+    console.error("Error obteniendo token de Graph:", tokenResult.details || tokenResult.message);
+    return jsonError("No fue posible enviar la solicitud en este momento. Intenta nuevamente.", 502);
   }
 
-  try {
-    const result = await resend.emails.send({
-      from,
-      to: [CONTACT_RECIPIENT],
-      subject: CONTACT_SUBJECT,
-      replyTo: email,
-      text: buildMailText({ fullName, phone, email, requestReason, clientIp }),
-      html: buildMailHtml({ fullName, phone, email, requestReason, clientIp }),
-    });
+  const sendResult = await sendGraphMail({
+    accessToken: tokenResult.accessToken,
+    senderEmail: graphConfig.senderEmail,
+    fullName,
+    phone,
+    email,
+    requestReason,
+    clientIp,
+  });
 
-    if (result?.error) {
-      console.error("Error enviando correo con Resend:", result.error);
-      return jsonError("No fue posible enviar la solicitud en este momento. Intenta nuevamente.", 502);
-    }
-  } catch (error) {
-    console.error("Error enviando correo de contacto:", error);
+  if (!sendResult.ok) {
+    console.error("Error enviando con Graph:", sendResult.details || sendResult.message);
     return jsonError("No fue posible enviar la solicitud en este momento. Intenta nuevamente.", 502);
   }
 
