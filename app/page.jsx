@@ -16,7 +16,7 @@ const heroPhotos = [
     className: "photoTop",
   },
   {
-    src: "/inicio/control-presion3.jpg",
+    src: "/inicio/control-presion3.JPG",
     alt: "Control de signos vitales en el hogar de una paciente",
     className: "photoBottom",
   },
