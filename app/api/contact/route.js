@@ -7,7 +7,7 @@ const PHONE_REGEX = /^\d{7,10}$/;
 const EMAIL_REGEX = /^[A-Za-z0-9._-]+@[A-Za-z0-9._-]+$/;
 const REQUEST_REASON_REGEX = /^[A-Za-z0-9@._\-\s]+$/;
 const ALLOWED_FIELDS = new Set(["fullName", "phone", "email", "requestReason", "website", "recaptchaToken"]);
-const CONTACT_RECIPIENT = "liderdetecnologia@especialistasencasa.com";
+const CONTACT_RECIPIENT = "atencionusuario@especialistasencasa.com";
 const CONTACT_SUBJECT = "Solicitud vía pagina web.";
 
 const MAX_CONTENT_LENGTH_BYTES = 10 * 1024;
