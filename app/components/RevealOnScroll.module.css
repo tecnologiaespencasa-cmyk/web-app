@@ -1,0 +1,47 @@
+.reveal {
+  opacity: 0;
+  transform: translate3d(0, 36px, 0) scale(0.985);
+  transition:
+    opacity 720ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 720ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+  will-change: opacity, transform;
+}
+
+.up {
+  transform: translate3d(0, 36px, 0) scale(0.985);
+}
+
+.left {
+  transform: translate3d(-42px, 0, 0) scale(0.985);
+}
+
+.right {
+  transform: translate3d(42px, 0, 0) scale(0.985);
+}
+
+.scale {
+  transform: translate3d(0, 18px, 0) scale(0.94);
+}
+
+.visible,
+.visible.up,
+.visible.left,
+.visible.right,
+.visible.scale {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .visible,
+  .up,
+  .left,
+  .right,
+  .scale {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}

@@ -1,0 +1,186 @@
+.footer {
+  margin-top: auto;
+  --brand-red: #e80115;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.12), transparent 28%),
+    radial-gradient(circle at 84% 24%, rgba(255, 255, 255, 0.1), transparent 24%),
+    linear-gradient(135deg, #c40011 0%, #e80115 44%, #ff2336 100%);
+  color: #ffffff;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.inner {
+  width: min(1380px, 100%);
+  margin: 0 auto;
+  padding: 1.35rem 1rem 1.1rem;
+  display: grid;
+  grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.2fr) minmax(240px, 0.9fr) minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.brandBlock,
+.docsBlock,
+.superSaludBlock,
+.infoBlock {
+  min-width: 0;
+}
+
+.brandBlock {
+  display: grid;
+  gap: 0.9rem;
+  align-content: start;
+  justify-items: center;
+  text-align: center;
+  transform: translateX(-1rem);
+}
+
+.brandLogo {
+  width: 92px;
+  height: auto;
+  display: block;
+}
+
+.brandTag {
+  margin: 0;
+  font-family: "Avenir Next", "Segoe UI Light", "Gill Sans", sans-serif;
+  font-weight: 300;
+  font-size: clamp(1.2rem, 1.8vw, 1.8rem);
+  line-height: 1.05;
+  letter-spacing: 0.01em;
+  text-align: center;
+  text-wrap: balance;
+}
+
+.blockTitle {
+  margin: 0 0 0.95rem;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.docsBlock {
+  display: grid;
+  align-content: start;
+}
+
+.superSaludBlock {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  align-content: center;
+}
+
+.superLogo {
+  width: min(270px, 100%);
+  height: auto;
+  display: block;
+  object-fit: contain;
+}
+
+.infoBlock {
+  display: grid;
+  align-content: start;
+}
+
+.itemList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.itemLink {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  color: #ffffff;
+  text-decoration: none;
+  line-height: 1.5;
+  font-weight: 600;
+}
+
+.itemText {
+  display: grid;
+  gap: 0.08rem;
+}
+
+.itemTitle {
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.itemValue {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.itemDetail {
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+a.itemLink {
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+a.itemLink:hover,
+a.itemLink:focus-visible {
+  opacity: 0.9;
+  transform: translateX(2px);
+  outline: none;
+}
+
+.itemIcon {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex: 0 0 auto;
+  margin-top: 0.14rem;
+}
+
+.rights {
+  margin: 1rem 0 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.88);
+  line-height: 1.5;
+}
+
+@media (max-width: 1100px) {
+  .inner {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .superSaludBlock {
+    justify-items: start;
+    text-align: left;
+  }
+}
+
+@media (max-width: 700px) {
+  .inner {
+    grid-template-columns: 1fr;
+    gap: 1.35rem;
+  }
+
+  .brandBlock {
+    transform: none;
+  }
+
+  .brandLogo {
+    width: 84px;
+  }
+
+  .superLogo {
+    width: min(240px, 90vw);
+  }
+}

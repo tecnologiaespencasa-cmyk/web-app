@@ -1,0 +1,432 @@
+.page {
+  --brand-red: #e80115;
+  --brand-red-dark: #b51122;
+  --brand-red-soft: rgba(232, 1, 21, 0.12);
+  --brand-red-soft-2: rgba(232, 1, 21, 0.2);
+  --brand-teal: #1d6d79;
+  --ink: #142131;
+  --muted: #495d70;
+  min-height: 100vh;
+  color: var(--ink, #142131);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(232, 1, 21, 0.15), transparent 24%),
+    radial-gradient(circle at 0% 16%, rgba(29, 109, 121, 0.16), transparent 26%),
+    linear-gradient(180deg, #fffdfd 0%, #f7fcfd 54%, #fff8f8 100%);
+}
+
+.hero,
+.focusSection,
+.routeSection {
+  --brand-red: #e80115;
+  --brand-red-dark: #b51122;
+  --brand-red-soft: rgba(232, 1, 21, 0.12);
+  --brand-red-soft-2: rgba(232, 1, 21, 0.2);
+  --brand-teal: #1d6d79;
+  --ink: #142131;
+  --muted: #495d70;
+  width: min(1420px, calc(100% - 2rem));
+  margin-inline: auto;
+}
+
+.hero {
+  padding-top: clamp(2.4rem, 5vw, 4.8rem);
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+  align-items: center;
+  gap: clamp(0.7rem, 2vw, 1.5rem);
+}
+
+.heroCopy h1,
+.focusCopy h2,
+.routeHeader h2 {
+  margin: 0.8rem 0 0;
+  font-family: "Sora", "Avenir Next", "Segoe UI", sans-serif;
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+  color: #102438;
+}
+
+.heroCopy h1 {
+  font-size: clamp(2.25rem, 4.8vw, 4.9rem);
+  max-width: 17.5ch;
+  text-wrap: balance;
+}
+
+.kicker,
+.sectionTag {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-family: "Sora", "Avenir Next", "Segoe UI", sans-serif;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  color: #e80115;
+}
+
+.kicker::before,
+.sectionTag::before {
+  content: "";
+  width: 2.2rem;
+  height: 2px;
+  border-radius: 999px;
+  background: rgba(232, 1, 21, 0.75);
+}
+
+.heroLead,
+.sectionLead,
+.outcomeItem p,
+.routeCard p {
+  margin: 0;
+  color: var(--muted, #495d70);
+  line-height: 1.72;
+}
+
+.heroLead {
+  margin-top: 1.15rem;
+  max-width: 57ch;
+  font-size: clamp(1rem, 1.2vw, 1.12rem);
+}
+
+.heroActions {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.primaryAction {
+  text-decoration: none;
+  font-family: "Sora", "Avenir Next", "Segoe UI", sans-serif;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 0.82rem 1.18rem;
+  color: #ffffff;
+  background: linear-gradient(135deg, #e80115 0%, #ff3d51 100%);
+  border: 1px solid rgba(232, 1, 21, 0.9);
+  box-shadow: 0 14px 32px rgba(232, 1, 21, 0.22);
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease,
+    color 180ms ease,
+    border-color 180ms ease;
+}
+
+.primaryAction:hover,
+.primaryAction:focus-visible {
+  transform: translateY(-2px);
+  outline: none;
+}
+
+.heroVisual {
+  position: relative;
+}
+
+.focusImageWrap {
+  position: relative;
+  overflow: hidden;
+  border-radius: 30px;
+  border: 1px solid rgba(232, 1, 21, 0.14);
+  box-shadow: 0 22px 46px rgba(15, 23, 42, 0.14);
+}
+
+.heroImageWrap {
+  position: relative;
+  overflow: visible;
+  width: min(100%, 42rem);
+  aspect-ratio: 16 / 10;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.image {
+  object-fit: cover;
+}
+
+.heroImage {
+  object-position: center center;
+}
+
+.focusSection,
+.routeSection {
+  margin-top: clamp(2.6rem, 6vw, 5rem);
+  padding: clamp(1.2rem, 3vw, 2.5rem);
+  border-radius: 34px;
+  border: 1px solid rgba(232, 1, 21, 0.1);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(232, 1, 21, 0.1), transparent 26%),
+    radial-gradient(circle at 0% 100%, rgba(29, 109, 121, 0.1), transparent 28%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(249, 252, 253, 0.93));
+  box-shadow: 0 24px 56px rgba(15, 23, 42, 0.07);
+}
+
+.focusSection {
+  display: grid;
+  grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.12fr);
+  gap: clamp(1rem, 2vw, 1.5rem);
+  align-items: center;
+}
+
+.focusImageWrap {
+  min-height: 640px;
+}
+
+.focusCopy h2,
+.routeHeader h2 {
+  font-size: clamp(1.9rem, 3.4vw, 3.35rem);
+  text-wrap: balance;
+}
+
+.focusCopy h2 {
+  max-width: 18ch;
+}
+
+.routeHeader h2 {
+  max-width: 24ch;
+}
+
+.sectionLead {
+  margin-top: 1rem;
+  max-width: 60ch;
+  font-size: clamp(1rem, 1.15vw, 1.08rem);
+}
+
+.outcomeList {
+  margin-top: 1.35rem;
+  display: grid;
+  gap: 0.78rem;
+}
+
+.outcomeItem,
+.routeCard {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), #fff7f7);
+  border: 1px solid rgba(232, 1, 21, 0.14);
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.06);
+}
+
+.outcomeItem {
+  border-radius: 22px;
+  padding: 0.92rem;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.85rem;
+  align-items: start;
+}
+
+.outcomeMark {
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--brand-red-dark, #b51122);
+  background: var(--brand-red-soft, rgba(232, 1, 21, 0.12));
+  font-weight: 800;
+}
+
+.routeHeader {
+  max-width: 900px;
+}
+
+.routeGrid {
+  margin-top: 1.35rem;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.routeCard {
+  border-radius: 24px;
+  padding: 1rem;
+  min-height: 100%;
+}
+
+.routeStep {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 18px;
+  color: var(--brand-red-dark, #b51122);
+  background: linear-gradient(180deg, rgba(232, 1, 21, 0.14), rgba(232, 1, 21, 0.24));
+  font-family: "Sora", "Avenir Next", "Segoe UI", sans-serif;
+  font-weight: 800;
+}
+
+.routeCard h3 {
+  margin: 0.8rem 0 0;
+  font-size: clamp(1.12rem, 1.4vw, 1.34rem);
+  letter-spacing: -0.02em;
+  color: #12263a;
+}
+
+.routeCard p {
+  margin-top: 0.58rem;
+}
+
+@media (max-width: 1180px) {
+  .focusSection {
+    grid-template-columns: 1fr;
+  }
+
+  .focusImageWrap {
+    min-height: 480px;
+  }
+
+  .routeGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 980px) {
+  .hero {
+    grid-template-columns: 1fr;
+  }
+
+  .heroImageWrap {
+    width: 100%;
+  }
+}
+
+@media (max-width: 760px) {
+  .hero,
+  .focusSection,
+  .routeSection {
+    width: min(100%, calc(100% - 1rem));
+  }
+
+  .hero {
+    padding-top: 1.2rem;
+    gap: 0.9rem;
+  }
+
+  .heroVisual {
+    order: -1;
+    margin-top: 0;
+    margin-bottom: 0.25rem;
+    display: grid;
+    justify-items: center;
+  }
+
+  .heroCopy {
+    order: 1;
+  }
+
+  .heroCopy h1 {
+    margin-top: 0.55rem;
+    font-size: clamp(2.08rem, 10.3vw, 2.95rem);
+    line-height: 0.95;
+    letter-spacing: -0.045em;
+    max-width: none;
+    text-wrap: pretty;
+  }
+
+  .heroLead {
+    margin-top: 0.9rem;
+    font-size: 0.99rem;
+    line-height: 1.62;
+  }
+
+  .heroActions {
+    margin-top: 1.05rem;
+  }
+
+  .primaryAction {
+    width: min(100%, 18.5rem);
+    text-align: center;
+    justify-content: center;
+    font-size: 1.02rem;
+    padding: 0.92rem 1.05rem;
+  }
+
+  .focusCopy h2,
+  .routeHeader h2 {
+    font-size: clamp(1.74rem, 8vw, 2.35rem);
+    max-width: none;
+  }
+
+  .heroImageWrap,
+  .focusImageWrap {
+    min-height: 0;
+  }
+
+  .heroImageWrap {
+    width: min(100%, 26rem);
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+  }
+
+  .heroImage {
+    object-fit: contain;
+    object-position: center center;
+    transform: scale(1.18);
+  }
+
+  .focusImageWrap {
+    min-height: 340px;
+  }
+
+  .routeGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .focusSection,
+  .routeSection {
+    border-radius: 26px;
+    padding: 1.2rem 1rem 1.35rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .hero,
+  .focusSection,
+  .routeSection {
+    width: min(100%, calc(100% - 0.7rem));
+  }
+
+  .hero {
+    padding-top: 1rem;
+    gap: 0.82rem;
+  }
+
+  .kicker,
+  .sectionTag {
+    font-size: 0.78rem;
+  }
+
+  .heroCopy h1 {
+    font-size: clamp(1.96rem, 10.5vw, 2.55rem);
+  }
+
+  .heroLead {
+    font-size: 0.96rem;
+  }
+
+  .primaryAction {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .heroImageWrap {
+    width: min(100%, 22.8rem);
+    aspect-ratio: 4 / 3;
+  }
+
+  .focusSection,
+  .routeSection {
+    border-radius: 22px;
+    padding: 1.05rem 0.9rem 1.2rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .primaryAction {
+    transition: none;
+  }
+}

@@ -1,0 +1,491 @@
+.page {
+  --brand-red: #e80115;
+  --brand-red-deep: #ba0d1c;
+  --red-soft: rgba(232, 1, 21, 0.1);
+  --red-soft-strong: rgba(232, 1, 21, 0.18);
+  --ink: #151b27;
+  --muted: #556072;
+  min-height: 100vh;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(232, 1, 21, 0.12), transparent 22%),
+    radial-gradient(circle at 100% 14%, rgba(255, 199, 199, 0.45), transparent 22%),
+    linear-gradient(180deg, #fffdfd 0%, #fff6f5 52%, #fffdf9 100%);
+}
+
+.hero,
+.storySection,
+.monitorSection {
+  width: min(1420px, calc(100% - 2rem));
+  margin-inline: auto;
+}
+
+.hero {
+  padding-top: clamp(2.3rem, 5vw, 4.8rem);
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  grid-template-areas:
+    "intro visual"
+    "lead visual"
+    "actions visual";
+  gap: clamp(1.2rem, 2.8vw, 2.4rem);
+  align-items: center;
+}
+
+.heroIntro {
+  grid-area: intro;
+}
+
+.heroLeadWrap {
+  grid-area: lead;
+}
+
+.actionRow {
+  grid-area: actions;
+  margin-top: 0.4rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+}
+
+.heroVisual {
+  grid-area: visual;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 720px;
+}
+
+.heroIntro h1,
+.storyCopy h2,
+.monitorCopy h2 {
+  margin: 0.8rem 0 0;
+  font-family: "Avenir Next", "Segoe UI", sans-serif;
+  line-height: 0.98;
+  letter-spacing: -0.04em;
+  color: #121826;
+  text-wrap: balance;
+}
+
+.heroIntro h1 {
+  font-size: clamp(2.3rem, 4.8vw, 4.8rem);
+  max-width: 13ch;
+}
+
+.kicker,
+.sectionTag {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: "Avenir Next", "Segoe UI", sans-serif;
+  font-size: 0.83rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--brand-red);
+}
+
+.kicker::before,
+.sectionTag::before {
+  content: "";
+  width: 2.4rem;
+  height: 2px;
+  border-radius: 999px;
+  background: rgba(232, 1, 21, 0.72);
+}
+
+.heroLead,
+.sectionLead,
+.checkItem p,
+.protocolCard p,
+.monitorNote p {
+  color: var(--muted);
+  line-height: 1.75;
+}
+
+.heroLead {
+  margin: 1.2rem 0 0;
+  max-width: 56ch;
+  font-size: clamp(1rem, 1.2vw, 1.14rem);
+}
+
+.primaryAction,
+.secondaryAction {
+  text-decoration: none;
+  font-family: "Avenir Next", "Segoe UI", sans-serif;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 0.85rem 1.22rem;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease,
+    border-color 180ms ease;
+}
+
+.primaryAction {
+  color: #fff;
+  background: linear-gradient(135deg, var(--brand-red) 0%, #ff3c4b 100%);
+  border: 1px solid rgba(232, 1, 21, 0.9);
+  box-shadow: 0 14px 30px rgba(232, 1, 21, 0.2);
+}
+
+.secondaryAction {
+  color: var(--brand-red);
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(232, 1, 21, 0.24);
+}
+
+.primaryAction:hover,
+.primaryAction:focus-visible,
+.secondaryAction:hover,
+.secondaryAction:focus-visible {
+  transform: translateY(-2px);
+  outline: none;
+}
+
+.heroImageWrap,
+.storyImageWrap,
+.monitorImageWrap {
+  position: relative;
+  overflow: hidden;
+  border-radius: 34px;
+  border: 1px solid rgba(232, 1, 21, 0.16);
+  box-shadow: 0 28px 60px rgba(15, 23, 42, 0.12);
+}
+
+.heroImageWrap {
+  width: min(100%, 34rem);
+  aspect-ratio: 2 / 3;
+  min-height: 0;
+  height: auto;
+  justify-self: center;
+  background: #fff;
+}
+
+.image {
+  object-fit: cover;
+}
+
+.heroImage {
+  object-fit: contain;
+  object-position: center center;
+}
+
+.storySection,
+.monitorSection {
+  margin-top: clamp(2.7rem, 6vw, 5rem);
+}
+
+.storySection,
+.monitorSection {
+  padding: clamp(1.35rem, 3vw, 2.7rem);
+  border-radius: 34px;
+  border: 1px solid rgba(232, 1, 21, 0.1);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(232, 1, 21, 0.08), transparent 24%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(255, 247, 247, 0.94) 100%);
+  box-shadow: 0 24px 56px rgba(15, 23, 42, 0.06);
+}
+
+.storyCopy h2,
+.monitorCopy h2 {
+  font-size: clamp(1.8rem, 3.5vw, 3.5rem);
+}
+
+.storyCopy h2,
+.monitorCopy h2 {
+  max-width: 19ch;
+}
+
+.sectionLead {
+  margin: 1rem 0 0;
+  max-width: 60ch;
+  font-size: clamp(1rem, 1.15vw, 1.08rem);
+}
+
+.checkItem,
+.protocolCard,
+.monitorNote {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, #fff9f9 100%);
+  border: 1px solid rgba(232, 1, 21, 0.14);
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.05);
+}
+
+.protocolCard h3 {
+  margin: 1rem 0 0;
+  font-size: clamp(1.15rem, 1.5vw, 1.45rem);
+  letter-spacing: -0.02em;
+}
+
+.storySection {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 1.2rem;
+  align-items: stretch;
+}
+
+.storyMedia,
+.monitorMedia {
+  min-width: 0;
+}
+
+.storyImageWrap {
+  height: 100%;
+  min-height: 620px;
+}
+
+.storyCopy {
+  align-self: center;
+}
+
+.storyQuote {
+  margin-top: 1.35rem;
+  padding: 1.1rem 1.15rem;
+  border-left: 4px solid var(--brand-red);
+  border-radius: 0 22px 22px 0;
+  background: rgba(255, 245, 245, 0.92);
+  color: var(--brand-red-deep);
+  font-family: "Avenir Next", "Segoe UI", sans-serif;
+  font-size: clamp(1.05rem, 1.5vw, 1.3rem);
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.checkList {
+  margin-top: 1.5rem;
+  display: grid;
+  gap: 0.8rem;
+}
+
+.checkItem {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.9rem;
+  align-items: start;
+  padding: 1rem;
+  border-radius: 22px;
+}
+
+.checkMark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 50%;
+  background: rgba(232, 1, 21, 0.12);
+  color: var(--brand-red);
+  font-weight: 800;
+}
+
+.checkItem p {
+  margin: 0;
+}
+
+.monitorSection {
+  display: grid;
+  grid-template-columns: minmax(0, 1.14fr) minmax(360px, 0.86fr);
+  gap: clamp(1rem, 2vw, 1.6rem);
+  align-items: start;
+}
+
+.monitorCopy {
+  display: grid;
+  align-content: start;
+}
+
+.protocolList {
+  margin-top: 1.6rem;
+  display: grid;
+  gap: 0.9rem;
+}
+
+.protocolCard {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 1rem;
+  align-items: start;
+  padding: 1.15rem;
+  border-radius: 24px;
+}
+
+.protocolNumber {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 22px;
+  color: var(--brand-red-deep);
+  background: linear-gradient(180deg, rgba(232, 1, 21, 0.12) 0%, rgba(232, 1, 21, 0.22) 100%);
+  font-family: "Avenir Next", "Segoe UI", sans-serif;
+  font-weight: 800;
+}
+
+.protocolCard h3,
+.protocolCard p {
+  margin: 0;
+}
+
+.protocolCard p {
+  margin-top: 0.6rem;
+}
+
+.monitorImageWrap {
+  min-height: 560px;
+}
+
+.monitorMedia {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+  padding-top: 1.1rem;
+}
+
+.monitorNote {
+  padding: 1.1rem;
+  border-radius: 24px;
+}
+
+.monitorNote strong {
+  display: block;
+  font-size: 1rem;
+  letter-spacing: -0.02em;
+}
+
+.monitorNote p {
+  margin: 0.6rem 0 0;
+}
+
+@media (max-width: 1100px) {
+  .storySection,
+  .monitorSection {
+    grid-template-columns: 1fr;
+  }
+
+  .storyImageWrap,
+  .monitorImageWrap {
+    min-height: 500px;
+  }
+
+  .monitorMedia {
+    padding-top: 0;
+  }
+
+}
+
+@media (max-width: 980px) {
+  .hero {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "intro"
+      "lead"
+      "visual"
+      "actions";
+    align-items: start;
+  }
+
+  .heroVisual {
+    min-height: auto;
+  }
+
+  .heroImageWrap {
+    width: min(100%, 32rem);
+  }
+}
+
+@media (max-width: 760px) {
+  .hero,
+  .storySection,
+  .monitorSection {
+    width: min(100%, calc(100% - 1rem));
+  }
+
+  .hero {
+    grid-template-columns: minmax(0, 0.92fr) minmax(190px, 1.08fr);
+    grid-template-areas:
+      "intro intro"
+      "lead visual"
+      "actions actions";
+    gap: 0.8rem 0.2rem;
+    padding-top: 1.6rem;
+    align-items: center;
+  }
+
+  .heroIntro h1 {
+    font-size: clamp(2.1rem, 9.8vw, 3.25rem);
+    line-height: 0.96;
+    max-width: none;
+    letter-spacing: -0.06em;
+  }
+
+  .storyCopy h2,
+  .monitorCopy h2 {
+    font-size: clamp(1.75rem, 8vw, 2.4rem);
+    line-height: 1.03;
+    max-width: none;
+    text-wrap: pretty;
+  }
+
+  .heroLead,
+  .sectionLead {
+    font-size: 1rem;
+    max-width: none;
+  }
+
+  .heroLead {
+    margin-top: 0;
+    font-size: 0.96rem;
+    line-height: 1.56;
+    max-width: none;
+  }
+
+  .heroLeadWrap {
+    align-self: center;
+  }
+
+  .actionRow {
+    margin-top: 0;
+  }
+
+  .secondaryAction {
+    padding: 0.8rem 1.05rem;
+  }
+
+  .heroImageWrap,
+  .storyImageWrap,
+  .monitorImageWrap {
+    min-height: 0;
+  }
+
+  .heroImageWrap {
+    width: 100%;
+    aspect-ratio: 2 / 3;
+    align-self: center;
+  }
+
+  .heroImageWrap .heroImage {
+    object-fit: contain;
+    object-position: center center;
+  }
+
+  .storyImageWrap,
+  .monitorImageWrap {
+    min-height: 340px;
+  }
+
+  .storySection,
+  .monitorSection {
+    border-radius: 26px;
+    padding: 1.2rem 1rem 1.35rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .primaryAction,
+  .secondaryAction {
+    transition: none;
+  }
+}

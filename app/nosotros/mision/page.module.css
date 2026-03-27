@@ -1,0 +1,287 @@
+.page {
+  --vision-red: #e80115;
+  --vision-red-deep: #b60b1f;
+  --vision-red-soft: rgba(232, 1, 21, 0.13);
+  --vision-teal: #1f6a75;
+  --vision-ink: #162537;
+  --vision-muted: #4b5f73;
+  min-height: 100vh;
+  color: var(--vision-ink);
+  padding-bottom: 4rem;
+  background:
+    radial-gradient(circle at 6% 6%, rgba(232, 1, 21, 0.17), transparent 34%),
+    radial-gradient(circle at 94% 16%, rgba(31, 106, 117, 0.14), transparent 33%),
+    linear-gradient(180deg, #fffdfd 0%, #fff7f7 45%, #f9fcfd 100%);
+}
+
+.hero,
+.groupsSection {
+  width: min(1320px, calc(100% - 2rem));
+  margin-inline: auto;
+}
+
+.hero {
+  padding-top: clamp(2rem, 4.2vw, 4.4rem);
+  display: grid;
+  grid-template-columns: minmax(0, 1.06fr) minmax(0, 0.94fr);
+  gap: clamp(1rem, 2.2vw, 1.6rem);
+  align-items: stretch;
+}
+
+.heroCopy {
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(232, 1, 21, 0.14);
+  border-radius: 30px;
+  padding: clamp(1.2rem, 3vw, 2.2rem);
+  box-shadow: 0 22px 46px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(3px);
+}
+
+.kicker,
+.sectionTag,
+.panelTag {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-family: "Sora", "Avenir Next", "Segoe UI", sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--vision-red);
+}
+
+.kicker::before,
+.sectionTag::before,
+.panelTag::before {
+  content: "";
+  width: 2.1rem;
+  height: 2px;
+  border-radius: 999px;
+  background: rgba(232, 1, 21, 0.75);
+}
+
+.heroCopy h1,
+.groupsHeader h2 {
+  margin: 0.78rem 0 0;
+  font-family: "Sora", "Avenir Next", "Segoe UI", sans-serif;
+  line-height: 0.98;
+  letter-spacing: -0.03em;
+  color: #0f2538;
+}
+
+.heroCopy h1 {
+  font-size: clamp(1.8rem, 4vw, 3.8rem);
+  max-width: none;
+  width: 100%;
+  text-wrap: pretty;
+}
+
+.statement {
+  margin: 1rem 0 0;
+  font-size: clamp(1rem, 1.2vw, 1.12rem);
+  line-height: 1.74;
+  color: var(--vision-muted);
+  max-width: 61ch;
+}
+
+.heroActions {
+  margin-top: 1.35rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.72rem;
+}
+
+.primaryAction {
+  text-decoration: none;
+  font-family: "Sora", "Avenir Next", "Segoe UI", sans-serif;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, var(--vision-red) 0%, #ff3d4f 100%);
+  border: 1px solid rgba(232, 1, 21, 0.88);
+  border-radius: 999px;
+  padding: 0.78rem 1.2rem;
+  box-shadow: 0 16px 28px rgba(232, 1, 21, 0.24);
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    filter 180ms ease;
+}
+
+.primaryAction:hover,
+.primaryAction:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 32px rgba(232, 1, 21, 0.3);
+  filter: saturate(1.08);
+  outline: none;
+}
+
+.routePanel {
+  border-radius: 32px;
+  padding: clamp(1.15rem, 2.8vw, 1.9rem);
+  border: 1px solid rgba(232, 1, 21, 0.14);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(232, 1, 21, 0.11), transparent 30%),
+    radial-gradient(circle at 0% 100%, rgba(31, 106, 117, 0.13), transparent 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.97), rgba(247, 252, 253, 0.94));
+  box-shadow: 0 22px 46px rgba(15, 23, 42, 0.08);
+}
+
+.routeList {
+  margin-top: 1rem;
+  display: grid;
+  gap: 0.78rem;
+}
+
+.routeItem {
+  border-radius: 22px;
+  padding: 0.86rem;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.72rem;
+  align-items: start;
+  border: 1px solid rgba(232, 1, 21, 0.14);
+  background: linear-gradient(180deg, #ffffff, #fff8f8);
+}
+
+.routeStep {
+  width: 2.3rem;
+  height: 2.3rem;
+  border-radius: 15px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Sora", "Avenir Next", "Segoe UI", sans-serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--vision-red-deep);
+  background: var(--vision-red-soft);
+}
+
+.routeItem h3,
+.groupCard h3 {
+  margin: 0;
+  letter-spacing: -0.02em;
+  color: #11263a;
+}
+
+.routeItem h3 {
+  font-size: clamp(1.05rem, 1.28vw, 1.2rem);
+}
+
+.routeItem p,
+.groupCard p {
+  margin: 0.5rem 0 0;
+  color: var(--vision-muted);
+  line-height: 1.62;
+}
+
+.groupsSection {
+  margin-top: clamp(2.2rem, 5.2vw, 4.6rem);
+  border-radius: 34px;
+  border: 1px solid rgba(232, 1, 21, 0.12);
+  padding: clamp(1.2rem, 3vw, 2.4rem);
+  background:
+    radial-gradient(circle at 92% 14%, rgba(232, 1, 21, 0.1), transparent 24%),
+    radial-gradient(circle at 4% 100%, rgba(31, 106, 117, 0.11), transparent 29%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.97), rgba(249, 252, 253, 0.93));
+  box-shadow: 0 24px 52px rgba(15, 23, 42, 0.08);
+}
+
+.groupsHeader h2 {
+  font-size: clamp(1.8rem, 3.3vw, 3.2rem);
+  max-width: none;
+  width: 100%;
+  text-wrap: pretty;
+}
+
+.groupsGrid {
+  margin-top: 1.2rem;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.groupCard {
+  height: 100%;
+  border-radius: 22px;
+  border: 1px solid rgba(232, 1, 21, 0.15);
+  background: linear-gradient(180deg, #ffffff, #fff7f8);
+  padding: 1rem;
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.06);
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.groupCard h3 {
+  font-size: clamp(1.06rem, 1.35vw, 1.25rem);
+}
+
+.groupCard:hover {
+  transform: translateY(-3px);
+  border-color: rgba(232, 1, 21, 0.28);
+  box-shadow: 0 20px 34px rgba(232, 1, 21, 0.12);
+}
+
+@media (max-width: 1140px) {
+  .hero {
+    grid-template-columns: 1fr;
+  }
+
+  .groupsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .page {
+    padding-bottom: 3rem;
+  }
+
+  .hero,
+  .groupsSection {
+    width: min(100%, calc(100% - 1rem));
+  }
+
+  .hero {
+    gap: 0.85rem;
+    padding-top: 1.2rem;
+  }
+
+  .heroCopy,
+  .routePanel,
+  .groupsSection {
+    border-radius: 24px;
+  }
+
+  .heroCopy h1 {
+    font-size: clamp(1.9rem, 9.4vw, 2.9rem);
+    max-width: none;
+  }
+
+  .groupsHeader h2 {
+    font-size: clamp(1.7rem, 8vw, 2.4rem);
+    max-width: none;
+  }
+
+  .groupsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .primaryAction {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .primaryAction,
+  .groupCard {
+    transition: none;
+  }
+
+  .primaryAction:hover,
+  .groupCard:hover {
+    transform: none;
+  }
+}

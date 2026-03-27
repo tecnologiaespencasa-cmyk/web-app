@@ -1,0 +1,423 @@
+.page {
+  --ocean-900: #0f3f4f;
+  --ocean-700: #1e6579;
+  --mint-100: #eefbfc;
+  --mint-200: #daf5f7;
+  --accent-red: #df2944;
+  --accent-coral: #ff6b6b;
+  --ink: #15202b;
+  --muted: #3d5266;
+  min-height: 100vh;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(255, 107, 107, 0.2), transparent 24%),
+    radial-gradient(circle at 0% 16%, rgba(64, 204, 224, 0.18), transparent 28%),
+    linear-gradient(180deg, #fdfefe 0%, #f4fbfc 48%, #fff9f7 100%);
+}
+
+.hero,
+.dualTrackSection,
+.protocolSection {
+  width: min(1420px, calc(100% - 2rem));
+  margin-inline: auto;
+}
+
+.hero {
+  padding-top: clamp(2.4rem, 5vw, 5rem);
+  display: grid;
+  grid-template-columns: minmax(0, 0.96fr) minmax(0, 1.04fr);
+  align-items: center;
+  gap: clamp(1.1rem, 3vw, 2.3rem);
+}
+
+.heroCopy h1,
+.trackHeader h2,
+.protocolCopy h2 {
+  margin: 0.7rem 0 0;
+  font-family: "Sora", "Avenir Next", "Segoe UI", sans-serif;
+  line-height: 0.98;
+  letter-spacing: -0.04em;
+  color: #102331;
+}
+
+.heroCopy h1 {
+  font-size: clamp(2.2rem, 4.8vw, 4.9rem);
+  max-width: 13ch;
+  text-wrap: balance;
+}
+
+.kicker,
+.sectionTag,
+.trackLabel {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-family: "Sora", "Avenir Next", "Segoe UI", sans-serif;
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--accent-red);
+}
+
+.kicker::before,
+.sectionTag::before,
+.trackLabel::before {
+  content: "";
+  width: 2.2rem;
+  height: 2px;
+  border-radius: 999px;
+  background: rgba(223, 41, 68, 0.72);
+}
+
+.heroLead,
+.sectionLead,
+.bulletItem p,
+.protocolItem p,
+.noteCard p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.72;
+}
+
+.heroLead {
+  margin-top: 1.2rem;
+  max-width: 56ch;
+  font-size: clamp(1.01rem, 1.16vw, 1.13rem);
+}
+
+.heroActions {
+  margin-top: 1.45rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.primaryAction,
+.secondaryAction {
+  text-decoration: none;
+  font-family: "Sora", "Avenir Next", "Segoe UI", sans-serif;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 0.82rem 1.15rem;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease,
+    color 180ms ease,
+    border-color 180ms ease;
+}
+
+.primaryAction {
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent-red) 0%, var(--accent-coral) 100%);
+  border: 1px solid rgba(223, 41, 68, 0.9);
+  box-shadow: 0 14px 30px rgba(223, 41, 68, 0.23);
+}
+
+.secondaryAction {
+  color: var(--ocean-900);
+  border: 1px solid rgba(30, 101, 121, 0.32);
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.primaryAction:hover,
+.primaryAction:focus-visible,
+.secondaryAction:hover,
+.secondaryAction:focus-visible {
+  transform: translateY(-2px);
+  outline: none;
+}
+
+.heroVisual {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: clamp(0.45rem, 1.5vw, 0.9rem);
+  border-radius: 38px;
+  border: 1px solid rgba(30, 101, 121, 0.15);
+  background:
+    radial-gradient(circle at 20% 0%, rgba(64, 204, 224, 0.24), transparent 25%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(229, 248, 251, 0.92) 100%);
+  box-shadow: 0 32px 70px rgba(15, 23, 42, 0.12);
+}
+
+.heroImageWrap,
+.trackImageWrap,
+.protocolImageWrap {
+  position: relative;
+  overflow: hidden;
+  border-radius: 30px;
+  border: 1px solid rgba(30, 101, 121, 0.16);
+  box-shadow: 0 22px 48px rgba(12, 40, 52, 0.16);
+}
+
+.heroImageWrap {
+  width: min(100%, 42.5rem);
+  aspect-ratio: 16 / 10.6;
+  z-index: 2;
+}
+
+.image {
+  object-fit: cover;
+}
+
+.heroHalo {
+  position: absolute;
+  inset: auto auto 6% 6%;
+  width: clamp(140px, 19vw, 250px);
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  border: 1px dashed rgba(30, 101, 121, 0.3);
+  background: radial-gradient(circle at center, rgba(64, 204, 224, 0.14), rgba(64, 204, 224, 0));
+  animation: drift 6s ease-in-out infinite;
+}
+
+.dualTrackSection,
+.protocolSection {
+  margin-top: clamp(2.7rem, 6vw, 5rem);
+  padding: clamp(1.25rem, 3vw, 2.5rem);
+  border-radius: 34px;
+  border: 1px solid rgba(30, 101, 121, 0.12);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(255, 107, 107, 0.11), transparent 26%),
+    radial-gradient(circle at 0% 100%, rgba(64, 204, 224, 0.11), transparent 28%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(239, 250, 252, 0.92));
+  box-shadow: 0 24px 58px rgba(15, 23, 42, 0.07);
+}
+
+.trackHeader h2,
+.protocolCopy h2 {
+  font-size: clamp(1.9rem, 3.6vw, 3.35rem);
+  text-wrap: balance;
+}
+
+.trackHeader h2 {
+  max-width: none;
+}
+
+.protocolCopy h2 {
+  max-width: 18ch;
+}
+
+.trackGrid {
+  margin-top: 1.45rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(1rem, 2vw, 1.35rem);
+}
+
+.trackCard,
+.protocolItem,
+.noteCard {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), #f5fcfd);
+  border: 1px solid rgba(30, 101, 121, 0.14);
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.07);
+}
+
+.trackCard {
+  border-radius: 28px;
+  overflow: hidden;
+}
+
+.trackImageWrap {
+  aspect-ratio: 16 / 10;
+}
+
+.trackBody {
+  padding: 1.1rem;
+}
+
+.trackBody h3,
+.protocolItem h3,
+.noteTitle {
+  margin: 0.85rem 0 0;
+  font-family: "Sora", "Avenir Next", "Segoe UI", sans-serif;
+  letter-spacing: -0.02em;
+  color: #122837;
+}
+
+.trackBody h3 {
+  font-size: clamp(1.16rem, 1.7vw, 1.5rem);
+}
+
+.bulletList {
+  margin-top: 1.05rem;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.bulletItem {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.7rem;
+  align-items: start;
+}
+
+.dot {
+  margin-top: 0.42rem;
+  width: 0.64rem;
+  height: 0.64rem;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-red), var(--accent-coral));
+  box-shadow: 0 0 0 4px rgba(223, 41, 68, 0.13);
+}
+
+.protocolSection {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(340px, 0.9fr);
+  gap: clamp(1rem, 2vw, 1.45rem);
+  align-items: start;
+}
+
+.sectionLead {
+  margin-top: 1rem;
+  max-width: 58ch;
+  font-size: clamp(1rem, 1.15vw, 1.08rem);
+}
+
+.protocolList {
+  margin-top: 1.35rem;
+  display: grid;
+  gap: 0.8rem;
+}
+
+.protocolItem {
+  border-radius: 22px;
+  padding: 1rem;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.85rem;
+  align-items: start;
+}
+
+.stepBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.8rem;
+  height: 2.8rem;
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(223, 41, 68, 0.14), rgba(255, 107, 107, 0.3));
+  color: #a70f2a;
+  font-family: "Sora", "Avenir Next", "Segoe UI", sans-serif;
+  font-weight: 800;
+}
+
+.protocolItem h3 {
+  font-size: clamp(1.1rem, 1.3vw, 1.3rem);
+}
+
+.protocolItem p {
+  margin-top: 0.5rem;
+}
+
+.protocolMedia {
+  display: grid;
+  gap: 0.95rem;
+  align-content: start;
+}
+
+.protocolImageWrap {
+  min-height: 560px;
+}
+
+.noteCard {
+  border-radius: 24px;
+  padding: 1.1rem;
+}
+
+.noteTitle {
+  margin-top: 0;
+  font-size: 1.08rem;
+}
+
+.noteCard p {
+  margin-top: 0.6rem;
+}
+
+@keyframes drift {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@media (max-width: 1180px) {
+  .trackGrid,
+  .protocolSection {
+    grid-template-columns: 1fr;
+  }
+
+  .protocolImageWrap {
+    min-height: 430px;
+  }
+}
+
+@media (max-width: 980px) {
+  .hero {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .hero,
+  .dualTrackSection,
+  .protocolSection {
+    width: min(100%, calc(100% - 1rem));
+  }
+
+  .hero {
+    padding-top: 1.7rem;
+  }
+
+  .heroCopy h1 {
+    font-size: clamp(2rem, 9.5vw, 3.3rem);
+    max-width: none;
+  }
+
+  .trackHeader h2,
+  .protocolCopy h2 {
+    max-width: none;
+    font-size: clamp(1.74rem, 8vw, 2.4rem);
+  }
+
+  .heroImageWrap,
+  .trackImageWrap,
+  .protocolImageWrap {
+    min-height: 0;
+  }
+
+  .heroImageWrap {
+    aspect-ratio: 4 / 3;
+  }
+
+  .protocolImageWrap {
+    min-height: 320px;
+  }
+
+  .heroHalo {
+    display: none;
+  }
+
+  .dualTrackSection,
+  .protocolSection {
+    border-radius: 26px;
+    padding: 1.15rem 1rem 1.3rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .primaryAction,
+  .secondaryAction,
+  .heroHalo {
+    animation: none;
+    transition: none;
+    transform: none;
+  }
+}
