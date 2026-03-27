@@ -16,6 +16,7 @@ const NAME_REGEX = /^[A-Za-z]+(?:\s+[A-Za-z]+)*$/;
 const PHONE_REGEX = /^\d{7,10}$/;
 const EMAIL_REGEX = /^[A-Za-z0-9._-]+@[A-Za-z0-9._-]+$/;
 const REQUEST_REASON_REGEX = /^[A-Za-z0-9@._\-\s]+$/;
+const REQUEST_REASON_MAX_LENGTH = 600;
 const SITE_KEY = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "";
 
 export default function ContactForm() {
@@ -74,7 +75,11 @@ export default function ContactForm() {
   const isEmailValid = useMemo(() => EMAIL_REGEX.test(formData.email.trim()), [formData.email]);
   const isReasonValid = useMemo(() => {
     const reason = formData.requestReason.trim();
-    return reason.length >= 10 && reason.length <= 600 && REQUEST_REASON_REGEX.test(reason);
+    if (reason.length === 0) {
+      return true;
+    }
+
+    return reason.length <= REQUEST_REASON_MAX_LENGTH && REQUEST_REASON_REGEX.test(reason);
   }, [formData.requestReason]);
 
   const canSubmit = useMemo(
@@ -119,7 +124,7 @@ export default function ContactForm() {
     }
 
     if (name === "requestReason") {
-      value = value.replace(/[^A-Za-z0-9@._\-\s]/g, "").slice(0, 600);
+      value = value.replace(/[^A-Za-z0-9@._\-\s]/g, "").slice(0, REQUEST_REASON_MAX_LENGTH);
     }
 
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -172,7 +177,7 @@ export default function ContactForm() {
     if (!isReasonValid) {
       setStatus({
         type: "error",
-        message: "El motivo debe tener de 10 a 600 caracteres y solo usar letras, números, espacios y @ . _ -",
+        message: "Si diligencias el motivo, solo puede usar letras, números, espacios y @ . _ -, máximo 600 caracteres.",
       });
       return;
     }
@@ -324,7 +329,7 @@ export default function ContactForm() {
 
         <div className={styles.fieldGroup}>
           <label htmlFor="requestReason" className={styles.label}>
-            Motivo de la solicitud
+            Motivo de la solicitud (Opcional)
           </label>
           <textarea
             id="requestReason"
@@ -333,11 +338,12 @@ export default function ContactForm() {
             placeholder="Describe brevemente tu solicitud"
             value={formData.requestReason}
             onChange={updateField}
-            minLength={10}
-            maxLength={600}
-            aria-invalid={showValidation && !isReasonValid}
-            required
+            maxLength={REQUEST_REASON_MAX_LENGTH}
+            aria-invalid={showValidation && formData.requestReason.trim().length > 0 && !isReasonValid}
           />
+          <p className={styles.fieldHelp}>
+            Opcional. Máximo {REQUEST_REASON_MAX_LENGTH} caracteres.
+          </p>
         </div>
 
         <div className={styles.captchaBox}>

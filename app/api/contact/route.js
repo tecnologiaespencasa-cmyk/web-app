@@ -6,6 +6,7 @@ const NAME_REGEX = /^[A-Za-z]+(?:\s+[A-Za-z]+)*$/;
 const PHONE_REGEX = /^\d{7,10}$/;
 const EMAIL_REGEX = /^[A-Za-z0-9._-]+@[A-Za-z0-9._-]+$/;
 const REQUEST_REASON_REGEX = /^[A-Za-z0-9@._\-\s]+$/;
+const REQUEST_REASON_MAX_LENGTH = 600;
 const ALLOWED_FIELDS = new Set(["fullName", "phone", "email", "requestReason", "website", "recaptchaToken"]);
 const CONTACT_RECIPIENT = "atencionusuario@especialistasencasa.com";
 const CONTACT_SUBJECT = "Solicitud vía pagina web.";
@@ -139,6 +140,7 @@ function getGraphConfig() {
 function buildMailText({ fullName, phone, email, requestReason, clientIp }) {
   const submittedAt = new Date().toISOString();
   const ipLabel = clientIp && clientIp !== "unknown" ? clientIp : "No disponible";
+  const reasonLabel = requestReason || "No especificado";
 
   return [
     "Nueva solicitud vía página web",
@@ -146,7 +148,7 @@ function buildMailText({ fullName, phone, email, requestReason, clientIp }) {
     `Nombre completo: ${fullName}`,
     `Teléfono: ${phone}`,
     `Correo electrónico: ${email}`,
-    `Motivo de la solicitud: ${requestReason}`,
+    `Motivo de la solicitud: ${reasonLabel}`,
     `IP: ${ipLabel}`,
     `Fecha (ISO): ${submittedAt}`,
   ].join("\n");
@@ -164,13 +166,14 @@ function escapeHtml(value) {
 function buildMailHtml({ fullName, phone, email, requestReason, clientIp }) {
   const submittedAt = new Date().toISOString();
   const ipLabel = clientIp && clientIp !== "unknown" ? clientIp : "No disponible";
+  const reasonLabel = requestReason || "No especificado";
 
   return `
     <h2 style="margin:0 0 12px;">Nueva solicitud vía página web</h2>
     <p style="margin:0 0 6px;"><strong>Nombre completo:</strong> ${escapeHtml(fullName)}</p>
     <p style="margin:0 0 6px;"><strong>Teléfono:</strong> ${escapeHtml(phone)}</p>
     <p style="margin:0 0 6px;"><strong>Correo electrónico:</strong> ${escapeHtml(email)}</p>
-    <p style="margin:0 0 6px;"><strong>Motivo de la solicitud:</strong> ${escapeHtml(requestReason)}</p>
+    <p style="margin:0 0 6px;"><strong>Motivo de la solicitud:</strong> ${escapeHtml(reasonLabel)}</p>
     <p style="margin:0 0 6px;"><strong>IP:</strong> ${escapeHtml(ipLabel)}</p>
     <p style="margin:0;"><strong>Fecha (ISO):</strong> ${escapeHtml(submittedAt)}</p>
   `;
@@ -321,11 +324,10 @@ export async function POST(request) {
   }
 
   if (
-    requestReason.length < 10 ||
-    requestReason.length > 600 ||
-    !REQUEST_REASON_REGEX.test(requestReason)
+    requestReason.length > 0 &&
+    (requestReason.length > REQUEST_REASON_MAX_LENGTH || !REQUEST_REASON_REGEX.test(requestReason))
   ) {
-    return jsonError("El motivo debe tener de 10 a 600 caracteres y solo usar letras, números, espacios y @ . _ -");
+    return jsonError("Si diligencias el motivo, solo puede usar letras, números, espacios y @ . _ -, máximo 600 caracteres.");
   }
 
   if (!recaptchaToken || recaptchaToken.length > 4096) {
