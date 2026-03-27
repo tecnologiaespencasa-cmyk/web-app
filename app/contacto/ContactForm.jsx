@@ -2,7 +2,7 @@
 
 import Script from "next/script";
 import { useEffect, useMemo, useRef, useState } from "react";
-import styles from "./page.module.css";
+import styles from "./ContactForm.module.css";
 
 const EMPTY_FORM = {
   fullName: "",

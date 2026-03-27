@@ -1,0 +1,140 @@
+.formCard {
+  --contact-red: #e80115;
+  --contact-red-dark: #b80011;
+  --contact-muted: #4a5567;
+  --contact-ink: #1f2430;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(232, 1, 21, 0.18);
+  border-radius: 26px;
+  padding: clamp(1.15rem, 2.6vw, 2rem);
+  box-shadow: 0 18px 35px rgba(184, 0, 17, 0.14);
+  backdrop-filter: blur(6px);
+  display: grid;
+  gap: 1rem;
+}
+
+.honeypot {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.fieldGroup {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.label {
+  color: var(--contact-ink);
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.input {
+  width: 100%;
+  border: 1px solid rgba(232, 1, 21, 0.24);
+  border-radius: 13px;
+  background: #fff;
+  color: #202534;
+  padding: 0.73rem 0.86rem;
+  font-size: 1rem;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.input::placeholder {
+  color: #7f8595;
+}
+
+.input:focus-visible {
+  outline: none;
+  border-color: var(--contact-red);
+  box-shadow: 0 0 0 3px rgba(232, 1, 21, 0.18);
+}
+
+.captchaBox {
+  border: 1px solid rgba(232, 1, 21, 0.2);
+  border-radius: 18px;
+  background: linear-gradient(180deg, #fff6f6 0%, #fff 75%);
+  padding: 1rem;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.captchaTitle {
+  margin: 0;
+  color: var(--contact-red-dark);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.captchaHint {
+  margin: 0;
+  color: var(--contact-muted);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.recaptchaFrame {
+  width: 100%;
+  min-height: 78px;
+  display: grid;
+  align-items: center;
+  justify-items: start;
+  border: 1px dashed rgba(232, 1, 21, 0.32);
+  border-radius: 12px;
+  padding: 0.65rem;
+  background: #fff;
+  overflow-x: auto;
+}
+
+.submitButton {
+  width: 100%;
+  border: none;
+  border-radius: 13px;
+  background: linear-gradient(120deg, var(--contact-red) 0%, #cc0012 100%);
+  color: #fff;
+  padding: 0.82rem 1rem;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  box-shadow: 0 14px 24px rgba(232, 1, 21, 0.24);
+  transition: transform 140ms ease, box-shadow 140ms ease, opacity 140ms ease;
+}
+
+.submitButton:hover,
+.submitButton:focus-visible {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 28px rgba(232, 1, 21, 0.28);
+  outline: none;
+}
+
+.submitButton:disabled {
+  opacity: 0.56;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.successText,
+.errorText {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.successText {
+  color: #047857;
+}
+
+.errorText {
+  color: #be123c;
+}
+
+@media (max-width: 900px) {
+  .formCard {
+    border-radius: 22px;
+  }
+}
