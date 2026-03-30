@@ -91,7 +91,7 @@ export default function SiteFooter() {
       <div className={styles.inner}>
         <div className={styles.brandBlock}>
           <Image
-            src="/fondoBlanco.png"
+            src="/fondoBlanco1.png"
             alt="Especialistas En Casa"
             width={98}
             height={98}
@@ -121,7 +121,7 @@ export default function SiteFooter() {
 
         <div className={styles.superSaludBlock}>
           <Image
-            src="/supersalud-oficial.png"
+            src="/supersalud-oficial1.png"
             alt="Vigilado Supersalud"
             width={270}
             height={86}

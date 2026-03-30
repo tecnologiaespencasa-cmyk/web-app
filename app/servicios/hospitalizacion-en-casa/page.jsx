@@ -63,7 +63,7 @@ export default function HospitalizacionEnCasaPage() {
         <RevealOnScroll className={styles.heroVisual} delay={140} variant="scale">
           <figure className={styles.heroImageWrap}>
             <Image
-              src="/hospitalizacion/hospitalizacion-hero.png"
+              src="/hospitalizacion/hospitalizacion-hero1.png"
               alt="Profesional de salud acompañando a un paciente durante hospitalización en casa"
               fill
               priority

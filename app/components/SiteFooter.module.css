@@ -1,6 +1,7 @@
 .footer {
   margin-top: auto;
   --brand-red: #e80115;
+  font-family: inherit;
   background:
     radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.12), transparent 28%),
     radial-gradient(circle at 84% 24%, rgba(255, 255, 255, 0.1), transparent 24%),
@@ -43,7 +44,7 @@
 
 .brandTag {
   margin: 0;
-  font-family: "Avenir Next", "Segoe UI Light", "Gill Sans", sans-serif;
+  font-family: inherit;
   font-weight: 300;
   font-size: clamp(1.2rem, 1.8vw, 1.8rem);
   line-height: 1.05;
