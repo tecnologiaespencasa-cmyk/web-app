@@ -9,7 +9,11 @@ const REQUEST_REASON_REGEX = /^[A-Za-z0-9@._\-\s]+$/;
 const REQUEST_REASON_MAX_LENGTH = 600;
 const ALLOWED_FIELDS = new Set(["fullName", "phone", "email", "requestReason", "website", "recaptchaToken"]);
 const CONTACT_RECIPIENT = "atencionusuario@especialistasencasa.com";
-const CONTACT_SUBJECT = "Solicitud vía pagina web.";
+const CONTACT_SUBJECT = "Nueva solicitud de contacto vía página web";
+const USER_CONFIRMATION_SUBJECT = "Recibimos tu solicitud de contacto";
+const ATTENTION_LINE = "604 3222498";
+const USER_CONFIRMATION_LOGO_CID = "especialistas-en-casa-logo";
+const USER_CONFIRMATION_LOGO_RELATIVE_PATH = ["public", "logo2.png"];
 
 const MAX_CONTENT_LENGTH_BYTES = 10 * 1024;
 const MAX_REQUESTS_PER_WINDOW = 8;
@@ -137,23 +141,6 @@ function getGraphConfig() {
   };
 }
 
-function buildMailText({ fullName, phone, email, requestReason, clientIp }) {
-  const submittedAt = new Date().toISOString();
-  const ipLabel = clientIp && clientIp !== "unknown" ? clientIp : "No disponible";
-  const reasonLabel = requestReason || "No especificado";
-
-  return [
-    "Nueva solicitud vía página web",
-    "",
-    `Nombre completo: ${fullName}`,
-    `Teléfono: ${phone}`,
-    `Correo electrónico: ${email}`,
-    `Motivo de la solicitud: ${reasonLabel}`,
-    `IP: ${ipLabel}`,
-    `Fecha (ISO): ${submittedAt}`,
-  ].join("\n");
-}
-
 function escapeHtml(value) {
   return String(value)
     .replace(/&/g, "&amp;")
@@ -163,8 +150,19 @@ function escapeHtml(value) {
     .replace(/'/g, "&#39;");
 }
 
-function buildMailHtml({ fullName, phone, email, requestReason, clientIp }) {
-  const submittedAt = new Date().toISOString();
+function getSubmittedLabels() {
+  const submittedAtDate = new Date();
+  return {
+    iso: submittedAtDate.toISOString(),
+    local: new Intl.DateTimeFormat("es-CO", {
+      dateStyle: "full",
+      timeStyle: "short",
+      timeZone: "America/Bogota",
+    }).format(submittedAtDate),
+  };
+}
+
+function buildInternalMailHtml({ fullName, phone, email, requestReason, clientIp, submittedAt }) {
   const ipLabel = clientIp && clientIp !== "unknown" ? clientIp : "No disponible";
   const reasonLabel = requestReason || "No especificado";
 
@@ -175,8 +173,178 @@ function buildMailHtml({ fullName, phone, email, requestReason, clientIp }) {
     <p style="margin:0 0 6px;"><strong>Correo electrónico:</strong> ${escapeHtml(email)}</p>
     <p style="margin:0 0 6px;"><strong>Motivo de la solicitud:</strong> ${escapeHtml(reasonLabel)}</p>
     <p style="margin:0 0 6px;"><strong>IP:</strong> ${escapeHtml(ipLabel)}</p>
-    <p style="margin:0;"><strong>Fecha (ISO):</strong> ${escapeHtml(submittedAt)}</p>
+    <p style="margin:0 0 6px;"><strong>Fecha (CO):</strong> ${escapeHtml(submittedAt.local)}</p>
+    <p style="margin:0;"><strong>Fecha (ISO):</strong> ${escapeHtml(submittedAt.iso)}</p>
   `;
+}
+
+function buildInternalMailMessage({ fullName, phone, email, requestReason, clientIp, submittedAt }) {
+  return {
+    subject: CONTACT_SUBJECT,
+    body: {
+      contentType: "HTML",
+      content: buildInternalMailHtml({
+        fullName,
+        phone,
+        email,
+        requestReason,
+        clientIp,
+        submittedAt,
+      }),
+    },
+    toRecipients: [
+      {
+        emailAddress: {
+          address: CONTACT_RECIPIENT,
+        },
+      },
+    ],
+    replyTo: [
+      {
+        emailAddress: {
+          address: email,
+        },
+      },
+    ],
+  };
+}
+
+function buildUserConfirmationMailHtml({ fullName, requestReason, submittedAt, includeInlineLogo }) {
+  const reasonBlock = requestReason
+    ? `
+      <tr>
+        <td style="padding:0 32px 20px;">
+          <div style="background:#fff4f4;border:1px solid #f2c7cc;border-radius:10px;padding:12px 14px;">
+            <p style="margin:0 0 6px;color:#4a5567;font-size:14px;"><strong>Motivo registrado:</strong></p>
+            <p style="margin:0;color:#1f2430;font-size:14px;line-height:1.5;">${escapeHtml(requestReason)}</p>
+          </div>
+        </td>
+      </tr>
+    `
+    : "";
+
+  const logoBlock = includeInlineLogo
+    ? `<img src="cid:${USER_CONFIRMATION_LOGO_CID}" alt="Especialistas En Casa" width="240" style="max-width:100%;height:auto;border:0;display:inline-block;" />`
+    : `<p style="margin:0;font-size:26px;font-weight:700;line-height:1.1;color:#e80115;">Especialistas En Casa</p>`;
+
+  return `
+    <div style="margin:0;padding:24px;background-color:#f4f6f8;font-family:Arial,Helvetica,sans-serif;">
+      <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;">
+        <tr>
+          <td style="padding:24px 32px 16px;text-align:center;background:#ffffff;border-bottom:1px solid #f0f2f5;">
+            ${logoBlock}
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:26px 32px 12px;">
+            <p style="margin:0 0 14px;color:#1f2430;font-size:16px;line-height:1.6;">Hola <strong>${escapeHtml(fullName)}</strong>,</p>
+            <p style="margin:0 0 14px;color:#4a5567;font-size:15px;line-height:1.7;">
+              Hemos recibido correctamente tu solicitud de contacto enviada el <strong>${escapeHtml(submittedAt.local)}</strong>.
+            </p>
+            <p style="margin:0 0 16px;color:#4a5567;font-size:15px;line-height:1.7;">
+              Nuestro equipo de Atención al Usuario revisará tu información y se comunicará contigo a la mayor brevedad posible.
+            </p>
+          </td>
+        </tr>
+        ${reasonBlock}
+        <tr>
+          <td style="padding:0 32px 12px;">
+            <p style="margin:0 0 10px;color:#1f2430;font-size:15px;font-weight:700;">Canales de comunicación</p>
+            <p style="margin:0 0 8px;color:#4a5567;font-size:14px;line-height:1.6;">
+              Línea de atención al usuario:
+              <a href="tel:${ATTENTION_LINE.replace(/\s+/g, "")}" style="color:#e80115;text-decoration:none;font-weight:700;">${ATTENTION_LINE}</a>
+            </p>
+            <p style="margin:0 0 16px;color:#4a5567;font-size:14px;line-height:1.6;">
+              Correo:
+              <a href="mailto:${CONTACT_RECIPIENT}" style="color:#e80115;text-decoration:none;font-weight:700;">${CONTACT_RECIPIENT}</a>
+            </p>
+            <p style="margin:0;color:#4a5567;font-size:14px;line-height:1.7;">
+              Gracias por confiar en Especialistas En Casa. Es un gusto acompañarte en tu proceso de atención domiciliaria.
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:14px 32px;background:#fafafa;border-top:1px solid #f0f2f5;">
+            <p style="margin:0;color:#7a8699;font-size:12px;line-height:1.6;">
+              Este es un mensaje automático de confirmación. Si necesitas atención inmediata, por favor utiliza nuestros canales oficiales.
+            </p>
+          </td>
+        </tr>
+      </table>
+    </div>
+  `;
+}
+
+let userConfirmationLogoBase64 = null;
+let userConfirmationLogoLoaded = false;
+
+async function getUserConfirmationLogoBase64() {
+  if (userConfirmationLogoLoaded) {
+    return userConfirmationLogoBase64;
+  }
+
+  try {
+    const [{ readFile }, pathModule] = await Promise.all([
+      import("node:fs/promises"),
+      import("node:path"),
+    ]);
+    const logoAbsolutePath = pathModule.join(process.cwd(), ...USER_CONFIRMATION_LOGO_RELATIVE_PATH);
+    const logoBuffer = await readFile(logoAbsolutePath);
+    userConfirmationLogoBase64 = logoBuffer.toString("base64");
+  } catch (error) {
+    console.error("No se pudo cargar el logo para el correo de confirmación:", error);
+    userConfirmationLogoBase64 = null;
+  } finally {
+    userConfirmationLogoLoaded = true;
+  }
+
+  return userConfirmationLogoBase64;
+}
+
+async function buildUserConfirmationMailMessage({ fullName, email, requestReason, submittedAt }) {
+  const logoBase64 = await getUserConfirmationLogoBase64();
+  const hasLogo = Boolean(logoBase64);
+  const message = {
+    subject: USER_CONFIRMATION_SUBJECT,
+    body: {
+      contentType: "HTML",
+      content: buildUserConfirmationMailHtml({
+        fullName,
+        requestReason,
+        submittedAt,
+        includeInlineLogo: hasLogo,
+      }),
+    },
+    toRecipients: [
+      {
+        emailAddress: {
+          address: email,
+        },
+      },
+    ],
+    replyTo: [
+      {
+        emailAddress: {
+          address: CONTACT_RECIPIENT,
+        },
+      },
+    ],
+  };
+
+  if (hasLogo) {
+    message.attachments = [
+      {
+        "@odata.type": "#microsoft.graph.fileAttachment",
+        name: "logo-especialistas-en-casa.png",
+        contentType: "image/png",
+        contentBytes: logoBase64,
+        isInline: true,
+        contentId: USER_CONFIRMATION_LOGO_CID,
+      },
+    ];
+  }
+
+  return message;
 }
 
 async function requestGraphAccessToken(graphConfig) {
@@ -210,30 +378,10 @@ async function requestGraphAccessToken(graphConfig) {
   return { ok: true, accessToken: tokenPayload.access_token };
 }
 
-async function sendGraphMail({ accessToken, senderEmail, fullName, phone, email, requestReason, clientIp }) {
+async function sendGraphMail({ accessToken, senderEmail, message }) {
   const sendMailUrl = `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(senderEmail)}/sendMail`;
   const mailPayload = {
-    message: {
-      subject: CONTACT_SUBJECT,
-      body: {
-        contentType: "HTML",
-        content: buildMailHtml({ fullName, phone, email, requestReason, clientIp }),
-      },
-      toRecipients: [
-        {
-          emailAddress: {
-            address: CONTACT_RECIPIENT,
-          },
-        },
-      ],
-      replyTo: [
-        {
-          emailAddress: {
-            address: email,
-          },
-        },
-      ],
-    },
+    message,
     saveToSentItems: false,
   };
 
@@ -382,19 +530,45 @@ export async function POST(request) {
     return jsonError("No fue posible enviar la solicitud en este momento. Intenta nuevamente.", 502);
   }
 
-  const sendResult = await sendGraphMail({
-    accessToken: tokenResult.accessToken,
-    senderEmail: graphConfig.senderEmail,
+  const submittedAt = getSubmittedLabels();
+  const internalMessage = buildInternalMailMessage({
     fullName,
     phone,
     email,
     requestReason,
     clientIp,
+    submittedAt,
   });
 
-  if (!sendResult.ok) {
-    console.error("Error enviando con Graph:", sendResult.details || sendResult.message);
+  const internalSendResult = await sendGraphMail({
+    accessToken: tokenResult.accessToken,
+    senderEmail: graphConfig.senderEmail,
+    message: internalMessage,
+  });
+
+  if (!internalSendResult.ok) {
+    console.error("Error enviando correo interno con Graph:", internalSendResult.details || internalSendResult.message);
     return jsonError("No fue posible enviar la solicitud en este momento. Intenta nuevamente.", 502);
+  }
+
+  const userConfirmationMessage = await buildUserConfirmationMailMessage({
+    fullName,
+    requestReason,
+    email,
+    submittedAt,
+  });
+
+  const userConfirmationResult = await sendGraphMail({
+    accessToken: tokenResult.accessToken,
+    senderEmail: graphConfig.senderEmail,
+    message: userConfirmationMessage,
+  });
+
+  if (!userConfirmationResult.ok) {
+    console.error(
+      "Error enviando correo de confirmación al usuario:",
+      userConfirmationResult.details || userConfirmationResult.message,
+    );
   }
 
   return jsonResponse({

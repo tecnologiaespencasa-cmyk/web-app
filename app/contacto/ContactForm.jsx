@@ -382,7 +382,7 @@ export default function ContactForm() {
               <span className={styles.modalCheck}>✓</span>
             </div>
             <p id="contact-success-title" className={styles.modalText}>
-              Solicitud enviada correctamente, uno de nuestros analistas te contactara pronto.
+              Solicitud enviada correctamente. Recibirás un correo de confirmación y uno de nuestros analistas te contactará pronto.
             </p>
             <button
               type="button"
