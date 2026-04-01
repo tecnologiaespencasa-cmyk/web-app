@@ -9,6 +9,7 @@ const REQUEST_REASON_REGEX = /^[A-Za-z0-9@._\-\s]+$/;
 const REQUEST_REASON_MAX_LENGTH = 600;
 const ALLOWED_FIELDS = new Set(["fullName", "phone", "email", "requestReason", "website", "recaptchaToken"]);
 const CONTACT_RECIPIENT = "atencionusuario@especialistasencasa.com";
+const CONTACT_CC_RECIPIENT = "direccionasistencial@especialistasencasa.com";
 const CONTACT_SUBJECT = "Nueva solicitud de contacto vía página web";
 const USER_CONFIRMATION_SUBJECT = "Recibimos tu solicitud de contacto";
 const ATTENTION_LINE = "604 3222498";
@@ -167,14 +168,57 @@ function buildInternalMailHtml({ fullName, phone, email, requestReason, clientIp
   const reasonLabel = requestReason || "No especificado";
 
   return `
-    <h2 style="margin:0 0 12px;">Nueva solicitud vía página web</h2>
-    <p style="margin:0 0 6px;"><strong>Nombre completo:</strong> ${escapeHtml(fullName)}</p>
-    <p style="margin:0 0 6px;"><strong>Teléfono:</strong> ${escapeHtml(phone)}</p>
-    <p style="margin:0 0 6px;"><strong>Correo electrónico:</strong> ${escapeHtml(email)}</p>
-    <p style="margin:0 0 6px;"><strong>Motivo de la solicitud:</strong> ${escapeHtml(reasonLabel)}</p>
-    <p style="margin:0 0 6px;"><strong>IP:</strong> ${escapeHtml(ipLabel)}</p>
-    <p style="margin:0 0 6px;"><strong>Fecha (CO):</strong> ${escapeHtml(submittedAt.local)}</p>
-    <p style="margin:0;"><strong>Fecha (ISO):</strong> ${escapeHtml(submittedAt.iso)}</p>
+    <div style="margin:0;padding:24px;background:#f4f6f8;font-family:Arial,Helvetica,sans-serif;">
+      <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width:680px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;">
+        <tr>
+          <td style="padding:22px 28px;background:#e80115;">
+            <p style="margin:0;color:#ffffff;font-size:20px;line-height:1.3;font-weight:700;">Nueva solicitud de contacto</p>
+            <p style="margin:6px 0 0;color:#ffe5e8;font-size:13px;line-height:1.5;">Formulario enviado desde la página web</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:22px 28px 12px;">
+            <p style="margin:0 0 14px;color:#1f2430;font-size:14px;line-height:1.6;">
+              Se registró una nueva solicitud. A continuación, los datos enviados por el usuario:
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:0 28px 22px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:separate;border-spacing:0;border:1px solid #eef0f3;border-radius:10px;overflow:hidden;">
+              <tr>
+                <td style="padding:11px 14px;background:#fafafa;color:#4a5567;font-size:13px;font-weight:700;width:34%;">Nombre completo</td>
+                <td style="padding:11px 14px;color:#1f2430;font-size:13px;line-height:1.5;">${escapeHtml(fullName)}</td>
+              </tr>
+              <tr>
+                <td style="padding:11px 14px;background:#fafafa;color:#4a5567;font-size:13px;font-weight:700;border-top:1px solid #eef0f3;">Teléfono</td>
+                <td style="padding:11px 14px;color:#1f2430;font-size:13px;line-height:1.5;border-top:1px solid #eef0f3;">${escapeHtml(phone)}</td>
+              </tr>
+              <tr>
+                <td style="padding:11px 14px;background:#fafafa;color:#4a5567;font-size:13px;font-weight:700;border-top:1px solid #eef0f3;">Correo electrónico</td>
+                <td style="padding:11px 14px;color:#1f2430;font-size:13px;line-height:1.5;border-top:1px solid #eef0f3;">${escapeHtml(email)}</td>
+              </tr>
+              <tr>
+                <td style="padding:11px 14px;background:#fafafa;color:#4a5567;font-size:13px;font-weight:700;border-top:1px solid #eef0f3;">Motivo</td>
+                <td style="padding:11px 14px;color:#1f2430;font-size:13px;line-height:1.5;border-top:1px solid #eef0f3;">${escapeHtml(reasonLabel)}</td>
+              </tr>
+              <tr>
+                <td style="padding:11px 14px;background:#fafafa;color:#4a5567;font-size:13px;font-weight:700;border-top:1px solid #eef0f3;">IP de origen</td>
+                <td style="padding:11px 14px;color:#1f2430;font-size:13px;line-height:1.5;border-top:1px solid #eef0f3;">${escapeHtml(ipLabel)}</td>
+              </tr>
+              <tr>
+                <td style="padding:11px 14px;background:#fafafa;color:#4a5567;font-size:13px;font-weight:700;border-top:1px solid #eef0f3;">Fecha (CO)</td>
+                <td style="padding:11px 14px;color:#1f2430;font-size:13px;line-height:1.5;border-top:1px solid #eef0f3;">${escapeHtml(submittedAt.local)}</td>
+              </tr>
+              <tr>
+                <td style="padding:11px 14px;background:#fafafa;color:#4a5567;font-size:13px;font-weight:700;border-top:1px solid #eef0f3;">Fecha (ISO)</td>
+                <td style="padding:11px 14px;color:#1f2430;font-size:13px;line-height:1.5;border-top:1px solid #eef0f3;">${escapeHtml(submittedAt.iso)}</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </div>
   `;
 }
 
@@ -196,6 +240,13 @@ function buildInternalMailMessage({ fullName, phone, email, requestReason, clien
       {
         emailAddress: {
           address: CONTACT_RECIPIENT,
+        },
+      },
+    ],
+    ccRecipients: [
+      {
+        emailAddress: {
+          address: CONTACT_CC_RECIPIENT,
         },
       },
     ],
