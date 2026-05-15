@@ -12,6 +12,11 @@ const documentLinks = [
     href: "/documentos/autorizacion-tratamiento-datos-personales.pdf",
     icon: "shield",
   },
+  {
+    label: "Derechos y deberes del paciente",
+    href: "/documentos/derechosydeberes.pdf",
+    icon: "document",
+  },
 ];
 
 const contactItems = [
