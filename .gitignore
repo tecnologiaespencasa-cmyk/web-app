@@ -2,9 +2,11 @@ node_modules
 .next
 out
 dist
-.env
-.env.local
 .DS_Store
-.next
-out
-dist
+
+# Variables de entorno y secretos: nunca versionar
+.env
+.env.*
+!.env.example
+*.pem
+*.key

@@ -1,15 +1,33 @@
 ﻿import { NextResponse } from "next/server";
+import {
+  REQUESTER_TYPE_EMAIL_LABELS,
+  formatDocumentType,
+  getDocumentType,
+  getFirstError,
+  getRequestType,
+  validateContactFields,
+} from "../../lib/contactSchema";
 
 export const runtime = "nodejs";
 
-const NAME_REGEX = /^[A-Za-z]+(?:\s+[A-Za-z]+)*$/;
-const PHONE_REGEX = /^\d{7,10}$/;
-const EMAIL_REGEX = /^[A-Za-z0-9._-]+@[A-Za-z0-9._-]+$/;
-const REQUEST_REASON_REGEX = /^[A-Za-z0-9@._\-\s]+$/;
-const REQUEST_REASON_MAX_LENGTH = 600;
-const ALLOWED_FIELDS = new Set(["fullName", "phone", "email", "requestReason", "website", "recaptchaToken"]);
-const CONTACT_RECIPIENT = "analistaatencionusuario@especialistasencasa.com";
-const CONTACT_CC_RECIPIENT = "direccionasistencial@especialistasencasa.com";
+const TEXT_FIELDS = [
+  "requesterType",
+  "documentType",
+  "documentNumber",
+  "patientName",
+  "requestType",
+  "email",
+  "phone",
+  "message",
+  "website",
+  "recaptchaToken",
+];
+const ALLOWED_FIELDS = new Set([...TEXT_FIELDS, "dataAuthorization"]);
+const CONTACT_RECIPIENT = "atencionusuario@especialistasencasa.com";
+const CONTACT_CC_RECIPIENTS = [
+  "lideratencionusuario@especialistasencasa.com",
+  "direccionasistencial@especialistasencasa.com",
+];
 const CONTACT_SUBJECT = "Nueva solicitud de contacto vía página web";
 const USER_CONFIRMATION_SUBJECT = "Recibimos tu solicitud de contacto";
 const ATTENTION_LINE = "604 3222498";
@@ -20,6 +38,9 @@ const MAX_CONTENT_LENGTH_BYTES = 10 * 1024;
 const MAX_REQUESTS_PER_WINDOW = 8;
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const BLOCK_DURATION_MS = 30 * 60 * 1000;
+const RATE_LIMITER_MAX_ENTRIES = 5000;
+const EXTERNAL_REQUEST_TIMEOUT_MS = 10 * 1000;
+const IP_REGEX = /^[0-9A-Fa-f:.]{3,45}$/;
 
 const rateLimiterStore = globalThis.__contactRateLimiterStore || new Map();
 if (!globalThis.__contactRateLimiterStore) {
@@ -41,14 +62,18 @@ function jsonError(message, status = 400, headers = {}) {
 }
 
 function getClientIp(request) {
-  const forwardedFor = request.headers.get("x-forwarded-for");
-  if (forwardedFor) {
-    return forwardedFor.split(",")[0].trim();
-  }
+  // x-real-ip lo fija la plataforma (Vercel/proxy) y el cliente no puede falsificarlo;
+  // x-forwarded-for queda solo como respaldo.
+  const candidates = [
+    request.headers.get("x-real-ip"),
+    String(request.headers.get("x-forwarded-for") || "").split(",")[0],
+  ];
 
-  const realIp = request.headers.get("x-real-ip");
-  if (realIp) {
-    return realIp.trim();
+  for (const candidate of candidates) {
+    const ip = String(candidate || "").trim();
+    if (IP_REGEX.test(ip)) {
+      return ip;
+    }
   }
 
   return "unknown";
@@ -61,6 +86,12 @@ function cleanupRateLimiter(now) {
     if (expiredWindow && expiredBlock) {
       rateLimiterStore.delete(ip);
     }
+  }
+
+  // Evita crecimiento ilimitado de memoria ante ataques con muchas IP distintas.
+  while (rateLimiterStore.size >= RATE_LIMITER_MAX_ENTRIES) {
+    const oldestKey = rateLimiterStore.keys().next().value;
+    rateLimiterStore.delete(oldestKey);
   }
 }
 
@@ -105,23 +136,61 @@ function enforceRateLimit(ip) {
   return { allowed: true };
 }
 
-function isRequestOriginAllowed(request) {
+/**
+ * Devuelve el hostname del origen si la petición proviene del mismo sitio; en otro caso null.
+ * Los navegadores siempre envían Origin en peticiones POST, por lo que su ausencia
+ * indica un cliente no legítimo (script, bot) y se rechaza.
+ */
+function getAllowedOriginHostname(request) {
   const origin = request.headers.get("origin");
   const host = request.headers.get("host");
 
   if (!origin || !host) {
-    return true;
+    return null;
+  }
+
+  const fetchSite = request.headers.get("sec-fetch-site");
+  if (fetchSite && fetchSite !== "same-origin") {
+    return null;
   }
 
   try {
-    return new URL(origin).host === host;
+    const originUrl = new URL(origin);
+    return originUrl.host === host ? originUrl.hostname : null;
   } catch {
-    return false;
+    return null;
   }
 }
 
 function hasUnexpectedFields(payload) {
   return Object.keys(payload).some((field) => !ALLOWED_FIELDS.has(field));
+}
+
+/**
+ * Lee los campos de texto esperados. Devuelve null si alguno no es string
+ * (evita confusión de tipos con arreglos u objetos).
+ */
+function readTextFields(payload) {
+  const fields = {};
+  for (const field of TEXT_FIELDS) {
+    const value = payload[field];
+    if (value === undefined || value === null) {
+      fields[field] = "";
+      continue;
+    }
+    if (typeof value !== "string") {
+      return null;
+    }
+    fields[field] = value.trim();
+  }
+  return fields;
+}
+
+function fetchWithTimeout(url, options) {
+  return fetch(url, {
+    ...options,
+    signal: AbortSignal.timeout(EXTERNAL_REQUEST_TIMEOUT_MS),
+  });
 }
 
 function getGraphConfig() {
@@ -154,7 +223,6 @@ function escapeHtml(value) {
 function getSubmittedLabels() {
   const submittedAtDate = new Date();
   return {
-    iso: submittedAtDate.toISOString(),
     local: new Intl.DateTimeFormat("es-CO", {
       dateStyle: "full",
       timeStyle: "short",
@@ -163,16 +231,35 @@ function getSubmittedLabels() {
   };
 }
 
-function buildInternalMailHtml({ fullName, phone, email, requestReason, clientIp, submittedAt }) {
-  const ipLabel = clientIp && clientIp !== "unknown" ? clientIp : "No disponible";
-  const reasonLabel = requestReason || "No especificado";
+function buildMailRow(label, valueHtml, isFirst) {
+  const border = isFirst ? "" : "border-top:1px solid #eef0f3;";
+  return `
+              <tr>
+                <td style="padding:11px 14px;background:#fafafa;color:#4a5567;font-size:13px;font-weight:700;width:34%;vertical-align:top;${border}">${label}</td>
+                <td style="padding:11px 14px;color:#1f2430;font-size:13px;line-height:1.5;${border}">${valueHtml}</td>
+              </tr>`;
+}
+
+function buildInternalMailHtml(submission) {
+  const rows = [
+    ["¿Quién realiza la solicitud?", escapeHtml(submission.requesterLabel)],
+    ["Tipo de documento del paciente", escapeHtml(submission.documentTypeLabel)],
+    ["Número de documento", escapeHtml(submission.documentNumber)],
+    ["Nombre del paciente", escapeHtml(submission.patientName)],
+    ["Tipo de solicitud", `<strong>${escapeHtml(submission.requestTypeLabel)}</strong>`],
+    ["Correo electrónico", escapeHtml(submission.email)],
+    ["Número de celular", escapeHtml(submission.phone)],
+    ["Observaciones o mensaje", escapeHtml(submission.message).replace(/\r?\n/g, "<br />")],
+    ["Autorización de tratamiento de datos personales", "Aceptada (Ley 1581 de 2012)"],
+    ["Fecha (CO)", escapeHtml(submission.submittedAt.local)],
+  ];
 
   return `
     <div style="margin:0;padding:24px;background:#f4f6f8;font-family:Arial,Helvetica,sans-serif;">
       <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width:680px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;">
         <tr>
           <td style="padding:22px 28px;background:#e80115;">
-            <p style="margin:0;color:#ffffff;font-size:20px;line-height:1.3;font-weight:700;">Nueva solicitud de contacto</p>
+            <p style="margin:0;color:#ffffff;font-size:20px;line-height:1.3;font-weight:700;">Nueva solicitud de contacto: ${escapeHtml(submission.requestTypeLabel)}</p>
             <p style="margin:6px 0 0;color:#ffe5e8;font-size:13px;line-height:1.5;">Formulario enviado desde la página web</p>
           </td>
         </tr>
@@ -186,34 +273,7 @@ function buildInternalMailHtml({ fullName, phone, email, requestReason, clientIp
         <tr>
           <td style="padding:0 28px 22px;">
             <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:separate;border-spacing:0;border:1px solid #eef0f3;border-radius:10px;overflow:hidden;">
-              <tr>
-                <td style="padding:11px 14px;background:#fafafa;color:#4a5567;font-size:13px;font-weight:700;width:34%;">Nombre completo</td>
-                <td style="padding:11px 14px;color:#1f2430;font-size:13px;line-height:1.5;">${escapeHtml(fullName)}</td>
-              </tr>
-              <tr>
-                <td style="padding:11px 14px;background:#fafafa;color:#4a5567;font-size:13px;font-weight:700;border-top:1px solid #eef0f3;">Teléfono</td>
-                <td style="padding:11px 14px;color:#1f2430;font-size:13px;line-height:1.5;border-top:1px solid #eef0f3;">${escapeHtml(phone)}</td>
-              </tr>
-              <tr>
-                <td style="padding:11px 14px;background:#fafafa;color:#4a5567;font-size:13px;font-weight:700;border-top:1px solid #eef0f3;">Correo electrónico</td>
-                <td style="padding:11px 14px;color:#1f2430;font-size:13px;line-height:1.5;border-top:1px solid #eef0f3;">${escapeHtml(email)}</td>
-              </tr>
-              <tr>
-                <td style="padding:11px 14px;background:#fafafa;color:#4a5567;font-size:13px;font-weight:700;border-top:1px solid #eef0f3;">Motivo</td>
-                <td style="padding:11px 14px;color:#1f2430;font-size:13px;line-height:1.5;border-top:1px solid #eef0f3;">${escapeHtml(reasonLabel)}</td>
-              </tr>
-              <tr>
-                <td style="padding:11px 14px;background:#fafafa;color:#4a5567;font-size:13px;font-weight:700;border-top:1px solid #eef0f3;">IP de origen</td>
-                <td style="padding:11px 14px;color:#1f2430;font-size:13px;line-height:1.5;border-top:1px solid #eef0f3;">${escapeHtml(ipLabel)}</td>
-              </tr>
-              <tr>
-                <td style="padding:11px 14px;background:#fafafa;color:#4a5567;font-size:13px;font-weight:700;border-top:1px solid #eef0f3;">Fecha (CO)</td>
-                <td style="padding:11px 14px;color:#1f2430;font-size:13px;line-height:1.5;border-top:1px solid #eef0f3;">${escapeHtml(submittedAt.local)}</td>
-              </tr>
-              <tr>
-                <td style="padding:11px 14px;background:#fafafa;color:#4a5567;font-size:13px;font-weight:700;border-top:1px solid #eef0f3;">Fecha (ISO)</td>
-                <td style="padding:11px 14px;color:#1f2430;font-size:13px;line-height:1.5;border-top:1px solid #eef0f3;">${escapeHtml(submittedAt.iso)}</td>
-              </tr>
+              ${rows.map(([label, valueHtml], index) => buildMailRow(label, valueHtml, index === 0)).join("")}
             </table>
           </td>
         </tr>
@@ -222,19 +282,14 @@ function buildInternalMailHtml({ fullName, phone, email, requestReason, clientIp
   `;
 }
 
-function buildInternalMailMessage({ fullName, phone, email, requestReason, clientIp, submittedAt }) {
+function buildInternalMailMessage(submission) {
+  const { email } = submission;
   return {
-    subject: CONTACT_SUBJECT,
+    // Se conserva el asunto base (posibles reglas de Outlook) y se agrega el tipo de solicitud.
+    subject: `${CONTACT_SUBJECT} - ${submission.requestTypeLabel}`,
     body: {
       contentType: "HTML",
-      content: buildInternalMailHtml({
-        fullName,
-        phone,
-        email,
-        requestReason,
-        clientIp,
-        submittedAt,
-      }),
+      content: buildInternalMailHtml(submission),
     },
     toRecipients: [
       {
@@ -243,13 +298,11 @@ function buildInternalMailMessage({ fullName, phone, email, requestReason, clien
         },
       },
     ],
-    ccRecipients: [
-      {
-        emailAddress: {
-          address: CONTACT_CC_RECIPIENT,
-        },
+    ccRecipients: CONTACT_CC_RECIPIENTS.map((address) => ({
+      emailAddress: {
+        address,
       },
-    ],
+    })),
     replyTo: [
       {
         emailAddress: {
@@ -260,20 +313,13 @@ function buildInternalMailMessage({ fullName, phone, email, requestReason, clien
   };
 }
 
-function buildUserConfirmationMailHtml({ fullName, requestReason, submittedAt, includeInlineLogo }) {
-  const reasonBlock = requestReason
-    ? `
-      <tr>
-        <td style="padding:0 32px 20px;">
-          <div style="background:#fff4f4;border:1px solid #f2c7cc;border-radius:10px;padding:12px 14px;">
-            <p style="margin:0 0 6px;color:#4a5567;font-size:14px;"><strong>Motivo registrado:</strong></p>
-            <p style="margin:0;color:#1f2430;font-size:14px;line-height:1.5;">${escapeHtml(requestReason)}</p>
-          </div>
-        </td>
-      </tr>
-    `
-    : "";
-
+// Seguridad/privacidad: el correo de confirmación va a una dirección que el usuario escribe
+// y que no está verificada. Por eso NO se repite aquí el mensaje ni el documento:
+// evita que el formulario se use para enviar texto arbitrario (phishing) desde el dominio
+// de la empresa y que información de salud llegue a un tercero si el correo está mal escrito.
+// Solo se saluda por nombre cuando quien escribe es el propio paciente.
+function buildUserConfirmationMailHtml({ greetingName, requestTypeLabel, submittedAt, includeInlineLogo }) {
+  const greeting = greetingName ? `Hola <strong>${escapeHtml(greetingName)}</strong>,` : "Hola,";
   const logoBlock = includeInlineLogo
     ? `<img src="cid:${USER_CONFIRMATION_LOGO_CID}" alt="Especialistas En Casa" width="240" style="max-width:100%;height:auto;border:0;display:inline-block;" />`
     : `<p style="margin:0;font-size:26px;font-weight:700;line-height:1.1;color:#e80115;">Especialistas En Casa</p>`;
@@ -288,16 +334,15 @@ function buildUserConfirmationMailHtml({ fullName, requestReason, submittedAt, i
         </tr>
         <tr>
           <td style="padding:26px 32px 12px;">
-            <p style="margin:0 0 14px;color:#1f2430;font-size:16px;line-height:1.6;">Hola <strong>${escapeHtml(fullName)}</strong>,</p>
+            <p style="margin:0 0 14px;color:#1f2430;font-size:16px;line-height:1.6;">${greeting}</p>
             <p style="margin:0 0 14px;color:#4a5567;font-size:15px;line-height:1.7;">
-              Hemos recibido correctamente tu solicitud de contacto enviada el <strong>${escapeHtml(submittedAt.local)}</strong>.
+              Hemos recibido correctamente tu solicitud de tipo <strong>${escapeHtml(requestTypeLabel)}</strong>, enviada el <strong>${escapeHtml(submittedAt.local)}</strong>.
             </p>
             <p style="margin:0 0 16px;color:#4a5567;font-size:15px;line-height:1.7;">
               Nuestro equipo de Atención al Usuario revisará tu información y se comunicará contigo a la mayor brevedad posible.
             </p>
           </td>
         </tr>
-        ${reasonBlock}
         <tr>
           <td style="padding:0 32px 12px;">
             <p style="margin:0 0 10px;color:#1f2430;font-size:15px;font-weight:700;">Canales de comunicación</p>
@@ -352,7 +397,7 @@ async function getUserConfirmationLogoBase64() {
   return userConfirmationLogoBase64;
 }
 
-async function buildUserConfirmationMailMessage({ fullName, email, requestReason, submittedAt }) {
+async function buildUserConfirmationMailMessage({ greetingName, requestTypeLabel, email, submittedAt }) {
   const logoBase64 = await getUserConfirmationLogoBase64();
   const hasLogo = Boolean(logoBase64);
   const message = {
@@ -360,8 +405,8 @@ async function buildUserConfirmationMailMessage({ fullName, email, requestReason
     body: {
       contentType: "HTML",
       content: buildUserConfirmationMailHtml({
-        fullName,
-        requestReason,
+        greetingName,
+        requestTypeLabel,
         submittedAt,
         includeInlineLogo: hasLogo,
       }),
@@ -409,7 +454,7 @@ async function requestGraphAccessToken(graphConfig) {
 
   let tokenResponse;
   try {
-    tokenResponse = await fetch(tokenUrl, {
+    tokenResponse = await fetchWithTimeout(tokenUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
@@ -438,7 +483,7 @@ async function sendGraphMail({ accessToken, senderEmail, message }) {
 
   let sendResponse;
   try {
-    sendResponse = await fetch(sendMailUrl, {
+    sendResponse = await fetchWithTimeout(sendMailUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -470,7 +515,8 @@ export async function POST(request) {
     );
   }
 
-  if (!isRequestOriginAllowed(request)) {
+  const originHostname = getAllowedOriginHostname(request);
+  if (!originHostname) {
     return jsonError("Origen no permitido.", 403);
   }
 
@@ -486,7 +532,12 @@ export async function POST(request) {
 
   let body;
   try {
-    body = await request.json();
+    // Se lee como texto para limitar el tamaño real aunque no venga Content-Length.
+    const rawBody = await request.text();
+    if (rawBody.length > MAX_CONTENT_LENGTH_BYTES) {
+      return jsonError("Carga demasiado grande.", 413);
+    }
+    body = JSON.parse(rawBody);
   } catch {
     return jsonError("Solicitud inválida.");
   }
@@ -499,34 +550,32 @@ export async function POST(request) {
     return jsonError("Solicitud no permitida.");
   }
 
-  const fullName = String(body?.fullName || "").trim();
-  const phone = String(body?.phone || "").trim();
-  const email = String(body?.email || "").trim();
-  const requestReason = String(body?.requestReason || "").trim();
-  const website = String(body?.website || "").trim();
-  const recaptchaToken = String(body?.recaptchaToken || "").trim();
+  const fields = readTextFields(body);
+  if (!fields) {
+    return jsonError("Formato de solicitud inválido.");
+  }
 
+  const { website, recaptchaToken } = fields;
   if (website.length > 0) {
     return jsonError("Solicitud rechazada.");
   }
 
-  if (fullName.length < 3 || fullName.length > 80 || !NAME_REGEX.test(fullName)) {
-    return jsonError("El nombre solo puede contener letras y espacios.");
-  }
+  // Normalización (NFC para tildes/ñ) y validación con las mismas reglas del formulario.
+  const submissionFields = {
+    requesterType: fields.requesterType,
+    documentType: fields.documentType,
+    documentNumber: fields.documentNumber.toUpperCase(),
+    patientName: fields.patientName.normalize("NFC"),
+    requestType: fields.requestType,
+    email: fields.email,
+    phone: fields.phone,
+    message: fields.message.normalize("NFC"),
+    dataAuthorization: body.dataAuthorization === true,
+  };
 
-  if (!PHONE_REGEX.test(phone)) {
-    return jsonError("El teléfono debe tener entre 7 y 10 dígitos.");
-  }
-
-  if (email.length > 80 || !EMAIL_REGEX.test(email)) {
-    return jsonError("El correo solo permite letras, números y los caracteres @ . _ -");
-  }
-
-  if (
-    requestReason.length > 0 &&
-    (requestReason.length > REQUEST_REASON_MAX_LENGTH || !REQUEST_REASON_REGEX.test(requestReason))
-  ) {
-    return jsonError("Si diligencias el motivo, solo puede usar letras, números, espacios y @ . _ -, máximo 600 caracteres.");
+  const firstError = getFirstError(validateContactFields(submissionFields));
+  if (firstError) {
+    return jsonError(firstError.message);
   }
 
   if (!recaptchaToken || recaptchaToken.length > 4096) {
@@ -549,7 +598,7 @@ export async function POST(request) {
 
   let verifyResponse;
   try {
-    verifyResponse = await fetch("https://www.google.com/recaptcha/api/siteverify", {
+    verifyResponse = await fetchWithTimeout("https://www.google.com/recaptcha/api/siteverify", {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
@@ -570,6 +619,12 @@ export async function POST(request) {
     return jsonError("No se pudo validar reCAPTCHA.", 400);
   }
 
+  // El token debe haberse resuelto en este mismo sitio (evita reutilizar tokens de otros dominios).
+  if (String(verification.hostname || "").toLowerCase() !== originHostname.toLowerCase()) {
+    console.warn("reCAPTCHA resuelto en un hostname distinto al del sitio:", verification.hostname);
+    return jsonError("No se pudo validar reCAPTCHA.", 400);
+  }
+
   const graphConfig = getGraphConfig();
   if (!graphConfig) {
     return jsonError("Configuración de correo incompleta.", 500);
@@ -581,13 +636,18 @@ export async function POST(request) {
     return jsonError("No fue posible enviar la solicitud en este momento. Intenta nuevamente.", 502);
   }
 
+  const documentType = getDocumentType(submissionFields.documentType);
+  const requestTypeLabel = getRequestType(submissionFields.requestType).label;
   const submittedAt = getSubmittedLabels();
   const internalMessage = buildInternalMailMessage({
-    fullName,
-    phone,
-    email,
-    requestReason,
-    clientIp,
+    requesterLabel: REQUESTER_TYPE_EMAIL_LABELS[submissionFields.requesterType],
+    documentTypeLabel: formatDocumentType(documentType),
+    documentNumber: submissionFields.documentNumber,
+    patientName: submissionFields.patientName,
+    requestTypeLabel,
+    email: submissionFields.email,
+    phone: submissionFields.phone,
+    message: submissionFields.message,
     submittedAt,
   });
 
@@ -603,9 +663,9 @@ export async function POST(request) {
   }
 
   const userConfirmationMessage = await buildUserConfirmationMailMessage({
-    fullName,
-    requestReason,
-    email,
+    greetingName: submissionFields.requesterType === "paciente" ? submissionFields.patientName : "",
+    requestTypeLabel,
+    email: submissionFields.email,
     submittedAt,
   });
 

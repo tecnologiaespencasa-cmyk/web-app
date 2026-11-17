@@ -3,24 +3,77 @@
 import Script from "next/script";
 import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./ContactForm.module.css";
+import {
+  DOCUMENT_TYPES,
+  MESSAGE_MAX_LENGTH,
+  MOBILE_LENGTH,
+  NAME_MAX_LENGTH,
+  EMAIL_MAX_LENGTH,
+  REQUESTER_TYPES,
+  REQUEST_TYPES,
+  formatDocumentType,
+  getDocumentHelp,
+  getDocumentType,
+  getFirstError,
+  sanitizeDocumentNumber,
+  sanitizeEmail,
+  sanitizeMessage,
+  sanitizeMobile,
+  sanitizeName,
+  validateContactFields,
+} from "../lib/contactSchema";
 
 const EMPTY_FORM = {
-  fullName: "",
-  phone: "",
+  requesterType: "",
+  documentType: "",
+  documentNumber: "",
+  patientName: "",
+  requestType: "",
   email: "",
-  requestReason: "",
+  phone: "",
+  message: "",
+  dataAuthorization: false,
   website: "",
 };
 
-const NAME_REGEX = /^[A-Za-z]+(?:\s+[A-Za-z]+)*$/;
-const PHONE_REGEX = /^\d{7,10}$/;
-const EMAIL_REGEX = /^[A-Za-z0-9._-]+@[A-Za-z0-9._-]+$/;
-const REQUEST_REASON_REGEX = /^[A-Za-z0-9@._\-\s]+$/;
-const REQUEST_REASON_MAX_LENGTH = 600;
 const SITE_KEY = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "";
+const DATA_AUTHORIZATION_PDF = "/documentos/autorizacion-tratamiento-datos-personales.pdf";
+const DATA_POLICY_PDF = "/documentos/politica-tratamiento-datos-personales.pdf";
+
+function sanitizeField(name, value, documentType) {
+  switch (name) {
+    case "patientName":
+      return sanitizeName(value);
+    case "documentNumber":
+      return sanitizeDocumentNumber(value, documentType);
+    case "phone":
+      return sanitizeMobile(value);
+    case "email":
+      return sanitizeEmail(value);
+    case "message":
+      return sanitizeMessage(value);
+    default:
+      return value;
+  }
+}
+
+function normalizeForm(formData) {
+  return {
+    requesterType: formData.requesterType,
+    documentType: formData.documentType,
+    documentNumber: formData.documentNumber.trim().toUpperCase(),
+    patientName: formData.patientName.normalize("NFC").trim(),
+    requestType: formData.requestType,
+    email: formData.email.trim(),
+    phone: formData.phone.trim(),
+    message: formData.message.normalize("NFC").trim(),
+    dataAuthorization: formData.dataAuthorization === true,
+  };
+}
 
 export default function ContactForm() {
   const [formData, setFormData] = useState(EMPTY_FORM);
+  const [touched, setTouched] = useState({});
   const [status, setStatus] = useState({ type: "idle", message: "" });
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [showValidation, setShowValidation] = useState(false);
@@ -70,65 +123,42 @@ export default function ContactForm() {
     });
   }, [isRecaptchaScriptReady]);
 
-  const isNameValid = useMemo(() => NAME_REGEX.test(formData.fullName.trim()), [formData.fullName]);
-  const isPhoneValid = useMemo(() => PHONE_REGEX.test(formData.phone.trim()), [formData.phone]);
-  const isEmailValid = useMemo(() => EMAIL_REGEX.test(formData.email.trim()), [formData.email]);
-  const isReasonValid = useMemo(() => {
-    const reason = formData.requestReason.trim();
-    if (reason.length === 0) {
-      return true;
-    }
+  const normalizedForm = useMemo(() => normalizeForm(formData), [formData]);
+  const errors = useMemo(() => validateContactFields(normalizedForm), [normalizedForm]);
+  const selectedDocumentType = getDocumentType(formData.documentType);
 
-    return reason.length <= REQUEST_REASON_MAX_LENGTH && REQUEST_REASON_REGEX.test(reason);
-  }, [formData.requestReason]);
+  const getFieldError = (name) => (showValidation || touched[name] ? errors[name] : undefined);
 
-  const canSubmit = useMemo(
-    () =>
-      isNameValid &&
-      isPhoneValid &&
-      isEmailValid &&
-      isReasonValid &&
-      !formData.website.trim() &&
-      Boolean(recaptchaToken) &&
-      Boolean(SITE_KEY) &&
-      !isSubmitting,
-    [formData.website, isEmailValid, isNameValid, isPhoneValid, isReasonValid, isSubmitting, recaptchaToken],
-  );
+  const handleChange = (event) => {
+    const { name, type, checked, value } = event.target;
+    // Durante la composición (tildes con tecla muerta, teclados móviles) no se transforma el valor
+    // para no interrumpir la escritura; se sanitiza al terminar (onCompositionEnd).
+    const isComposing = Boolean(event.nativeEvent?.isComposing);
 
-  const updateField = (event) => {
-    const { name } = event.target;
-    let { value } = event.target;
-
-    if (name === "fullName") {
-      value = value.replace(/[^A-Za-z\s]/g, "").replace(/\s{2,}/g, " ").slice(0, 80);
-    }
-
-    if (name === "phone") {
-      value = value.replace(/\D/g, "").slice(0, 10);
-    }
-
-    if (name === "email") {
-      const compact = value.replace(/\s/g, "");
-      const allowedChars = compact.replace(/[^A-Za-z0-9._@-]/g, "");
-      const firstAtIndex = allowedChars.indexOf("@");
-
-      if (firstAtIndex === -1) {
-        value = allowedChars;
-      } else {
-        const localPart = allowedChars.slice(0, firstAtIndex + 1);
-        const domainPart = allowedChars.slice(firstAtIndex + 1).replace(/@/g, "");
-        value = `${localPart}${domainPart}`;
+    setFormData((prev) => {
+      if (type === "checkbox") {
+        return { ...prev, [name]: checked };
       }
 
-      value = value.slice(0, 80);
-    }
+      if (name === "documentType") {
+        return {
+          ...prev,
+          documentType: value,
+          documentNumber: sanitizeDocumentNumber(prev.documentNumber, value),
+        };
+      }
 
-    if (name === "requestReason") {
-      value = value.replace(/[^A-Za-z0-9@._\-\s]/g, "").slice(0, REQUEST_REASON_MAX_LENGTH);
-    }
-
-    setFormData((prev) => ({ ...prev, [name]: value }));
+      return {
+        ...prev,
+        [name]: isComposing ? value : sanitizeField(name, value, prev.documentType),
+      };
+    });
     setStatus({ type: "idle", message: "" });
+  };
+
+  const handleBlur = (event) => {
+    const { name } = event.target;
+    setTouched((prev) => (prev[name] ? prev : { ...prev, [name]: true }));
   };
 
   const resetRecaptcha = () => {
@@ -150,35 +180,14 @@ export default function ContactForm() {
       return;
     }
 
-    if (!isNameValid) {
-      setStatus({
-        type: "error",
-        message: "El nombre solo puede contener letras y espacios.",
-      });
+    const firstError = getFirstError(errors);
+    if (firstError) {
+      setStatus({ type: "error", message: firstError.message });
+      document.getElementById(firstError.field)?.focus();
       return;
     }
 
-    if (!isPhoneValid) {
-      setStatus({
-        type: "error",
-        message: "El teléfono debe tener entre 7 y 10 dígitos numéricos.",
-      });
-      return;
-    }
-
-    if (!isEmailValid) {
-      setStatus({
-        type: "error",
-        message: "El correo solo permite letras, números y los caracteres @ . _ -",
-      });
-      return;
-    }
-
-    if (!isReasonValid) {
-      setStatus({
-        type: "error",
-        message: "Si diligencias el motivo, solo puede usar letras, números, espacios y @ . _ -, máximo 600 caracteres.",
-      });
+    if (formData.website.trim()) {
       return;
     }
 
@@ -199,10 +208,7 @@ export default function ContactForm() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          fullName: formData.fullName.trim(),
-          phone: formData.phone.trim(),
-          email: formData.email.trim(),
-          requestReason: formData.requestReason.trim(),
+          ...normalizedForm,
           website: formData.website.trim(),
           recaptchaToken,
         }),
@@ -222,6 +228,7 @@ export default function ContactForm() {
       setStatus({ type: "idle", message: "" });
       setIsSuccessModalOpen(true);
       setFormData(EMPTY_FORM);
+      setTouched({});
       setShowValidation(false);
       resetRecaptcha();
     } catch {
@@ -233,6 +240,24 @@ export default function ContactForm() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const fieldProps = (name) => ({
+    id: name,
+    name,
+    onChange: handleChange,
+    onBlur: handleBlur,
+    "aria-invalid": Boolean(getFieldError(name)),
+    "aria-describedby": getFieldError(name) ? `${name}-error` : undefined,
+  });
+
+  const renderError = (name) => {
+    const error = getFieldError(name);
+    return error ? (
+      <p id={`${name}-error`} className={styles.fieldError}>
+        {error}
+      </p>
+    ) : null;
   };
 
   return (
@@ -261,89 +286,213 @@ export default function ContactForm() {
             tabIndex={-1}
             autoComplete="off"
             value={formData.website}
-            onChange={updateField}
+            onChange={handleChange}
           />
         </div>
 
+        {/* 1. Quién realiza la solicitud */}
         <div className={styles.fieldGroup}>
-          <label htmlFor="fullName" className={styles.label}>
-            Nombre completo
+          <label htmlFor="requesterType" className={styles.label}>
+            ¿Quién realiza la solicitud?
+          </label>
+          <select
+            {...fieldProps("requesterType")}
+            className={`${styles.input} ${styles.select}`}
+            value={formData.requesterType}
+            required
+          >
+            <option value="" disabled>
+              Selecciona una opción
+            </option>
+            {REQUESTER_TYPES.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          {renderError("requesterType")}
+        </div>
+
+        {/* 2. Tipo y número de documento del paciente */}
+        <div className={styles.fieldRow}>
+          <div className={styles.fieldGroup}>
+            <label htmlFor="documentType" className={styles.label}>
+              Tipo de documento del paciente
+            </label>
+            <select
+              {...fieldProps("documentType")}
+              className={`${styles.input} ${styles.select}`}
+              value={formData.documentType}
+              required
+            >
+              <option value="" disabled>
+                Selecciona el tipo
+              </option>
+              {DOCUMENT_TYPES.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {formatDocumentType(option)}
+                </option>
+              ))}
+            </select>
+            {renderError("documentType")}
+          </div>
+
+          <div className={styles.fieldGroup}>
+            <label htmlFor="documentNumber" className={styles.label}>
+              Número de documento
+            </label>
+            <input
+              {...fieldProps("documentNumber")}
+              onCompositionEnd={handleChange}
+              type="text"
+              autoComplete="off"
+              autoCapitalize="characters"
+              spellCheck={false}
+              inputMode={selectedDocumentType && !selectedDocumentType.allowsLetters ? "numeric" : "text"}
+              maxLength={selectedDocumentType?.maxLength}
+              className={styles.input}
+              placeholder={selectedDocumentType?.allowsLetters ? "Ej: AB123456" : "Ej: 1020304050"}
+              value={formData.documentNumber}
+              disabled={!selectedDocumentType}
+              aria-describedby={getFieldError("documentNumber") ? "documentNumber-error" : "documentNumber-help"}
+              required
+            />
+            {renderError("documentNumber") || (
+              <p id="documentNumber-help" className={styles.fieldHelp}>
+                {getDocumentHelp(selectedDocumentType)}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* 3. Nombre del paciente */}
+        <div className={styles.fieldGroup}>
+          <label htmlFor="patientName" className={styles.label}>
+            Nombre completo del paciente
           </label>
           <input
-            id="fullName"
-            name="fullName"
+            {...fieldProps("patientName")}
+            onCompositionEnd={handleChange}
             type="text"
-            autoComplete="name"
+            autoComplete={formData.requesterType === "paciente" ? "name" : "off"}
             className={styles.input}
-            placeholder="Ej: María Fernanda Castro"
-            value={formData.fullName}
-            onChange={updateField}
-            pattern="[A-Za-z]+(?:\\s+[A-Za-z]+)*"
-            maxLength={80}
-            aria-invalid={showValidation && !isNameValid}
+            placeholder="Ej: María Fernanda Castro Peña"
+            value={formData.patientName}
+            maxLength={NAME_MAX_LENGTH}
             required
           />
+          {renderError("patientName")}
         </div>
 
+        {/* 4. Tipo de solicitud */}
         <div className={styles.fieldGroup}>
-          <label htmlFor="phone" className={styles.label}>
-            Número de teléfono
+          <label htmlFor="requestType" className={styles.label}>
+            Tipo de solicitud
           </label>
-          <input
-            id="phone"
-            name="phone"
-            type="tel"
-            autoComplete="tel"
-            inputMode="numeric"
-            pattern="\\d{7,10}"
-            minLength={7}
-            maxLength={10}
-            className={styles.input}
-            placeholder="Ej: 3001234567"
-            value={formData.phone}
-            onChange={updateField}
-            aria-invalid={showValidation && !isPhoneValid}
+          <select
+            {...fieldProps("requestType")}
+            className={`${styles.input} ${styles.select}`}
+            value={formData.requestType}
             required
-          />
+          >
+            <option value="" disabled>
+              Selecciona el tipo de solicitud
+            </option>
+            {REQUEST_TYPES.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          {renderError("requestType")}
         </div>
 
+        {/* 5. Correo electrónico */}
         <div className={styles.fieldGroup}>
           <label htmlFor="email" className={styles.label}>
             Correo electrónico
           </label>
           <input
-            id="email"
-            name="email"
+            {...fieldProps("email")}
+            onCompositionEnd={handleChange}
             type="text"
             autoComplete="email"
-            pattern="[A-Za-z0-9._-]+@[A-Za-z0-9._-]+"
-            maxLength={80}
+            inputMode="email"
+            maxLength={EMAIL_MAX_LENGTH}
             className={styles.input}
-            placeholder="Ej: usuario_test@dominio.com"
+            placeholder="Ej: nombre@dominio.com"
             value={formData.email}
-            onChange={updateField}
-            aria-invalid={showValidation && !isEmailValid}
             required
           />
+          {renderError("email")}
         </div>
 
+        {/* 6. Número de celular */}
         <div className={styles.fieldGroup}>
-          <label htmlFor="requestReason" className={styles.label}>
-            Motivo de la solicitud (Opcional)
+          <label htmlFor="phone" className={styles.label}>
+            Número de celular
+          </label>
+          <input
+            {...fieldProps("phone")}
+            type="tel"
+            autoComplete="tel-national"
+            inputMode="numeric"
+            maxLength={MOBILE_LENGTH}
+            className={styles.input}
+            placeholder="Ej: 3001234567"
+            value={formData.phone}
+            required
+          />
+          {renderError("phone")}
+        </div>
+
+        {/* 7. Observaciones o mensaje */}
+        <div className={styles.fieldGroup}>
+          <label htmlFor="message" className={styles.label}>
+            Observaciones o mensaje
           </label>
           <textarea
-            id="requestReason"
-            name="requestReason"
+            {...fieldProps("message")}
+            onCompositionEnd={handleChange}
             className={styles.textarea}
-            placeholder="Describe brevemente tu solicitud"
-            value={formData.requestReason}
-            onChange={updateField}
-            maxLength={REQUEST_REASON_MAX_LENGTH}
-            aria-invalid={showValidation && formData.requestReason.trim().length > 0 && !isReasonValid}
+            placeholder="Describe tu solicitud con el mayor detalle posible"
+            value={formData.message}
+            maxLength={MESSAGE_MAX_LENGTH}
+            required
           />
-          <p className={styles.fieldHelp}>
-            Opcional. Máximo {REQUEST_REASON_MAX_LENGTH} caracteres.
-          </p>
+          {renderError("message") || (
+            <p className={styles.fieldHelp}>
+              {formData.message.length}/{MESSAGE_MAX_LENGTH} caracteres.
+            </p>
+          )}
+        </div>
+
+        {/* Autorización de tratamiento de datos personales (Ley 1581 de 2012) */}
+        <div className={styles.consentBox}>
+          <label htmlFor="dataAuthorization" className={styles.consentLabel}>
+            <input
+              {...fieldProps("dataAuthorization")}
+              type="checkbox"
+              className={styles.checkbox}
+              checked={formData.dataAuthorization}
+              required
+            />
+            <span>
+              Autorizo de manera previa, expresa e informada a Especialistas En Casa (NIT 901154675-0) para tratar
+              los datos personales suministrados en este formulario, incluidos los datos sensibles relacionados con
+              la salud, con el fin de gestionar y dar respuesta a esta solicitud, conforme a la Ley 1581 de 2012, la{" "}
+              <a href={DATA_AUTHORIZATION_PDF} target="_blank" rel="noopener noreferrer">
+                autorización para el tratamiento de datos personales
+              </a>{" "}
+              y la{" "}
+              <a href={DATA_POLICY_PDF} target="_blank" rel="noopener noreferrer">
+                política de tratamiento de datos personales
+              </a>
+              . Si diligencio la solicitud en nombre del paciente, declaro que estoy facultado(a) para suministrar
+              sus datos.
+            </span>
+          </label>
+          {renderError("dataAuthorization")}
         </div>
 
         <div className={styles.captchaBox}>
@@ -358,8 +507,8 @@ export default function ContactForm() {
           ) : null}
         </div>
 
-        <button type="submit" className={styles.submitButton} disabled={!canSubmit}>
-          {isSubmitting ? "Enviando..." : "Enviar información"}
+        <button type="submit" className={styles.submitButton} disabled={isSubmitting || !SITE_KEY}>
+          {isSubmitting ? "Enviando..." : "Enviar solicitud"}
         </button>
 
         {status.message ? (
@@ -382,7 +531,8 @@ export default function ContactForm() {
               <span className={styles.modalCheck}>✓</span>
             </div>
             <p id="contact-success-title" className={styles.modalText}>
-              Solicitud enviada correctamente. Recibirás un correo de confirmación y uno de nuestros analistas te contactará pronto.
+              Solicitud enviada correctamente. Recibirás un correo de confirmación y nuestro equipo de Atención al
+              Usuario te contactará pronto.
             </p>
             <button
               type="button"
@@ -397,4 +547,3 @@ export default function ContactForm() {
     </>
   );
 }
-
